@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/mcpify"><img src="https://img.shields.io/npm/v/mcpify?style=flat-square&color=6366f1" alt="npm version"></a>
-  <a href="https://github.com/bahri-hirfanoglu/mcpify/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/mcpify?style=flat-square&color=8b5cf6" alt="license"></a>
-  <a href="https://www.npmjs.com/package/mcpify"><img src="https://img.shields.io/npm/dm/mcpify?style=flat-square&color=a78bfa" alt="downloads"></a>
+  <a href="https://www.npmjs.com/package/@bahridev/mcpify"><img src="https://img.shields.io/npm/v/@bahridev/mcpify?style=flat-square&color=6366f1" alt="npm version"></a>
+  <a href="https://github.com/bahri-hirfanoglu/mcpify/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/@bahridev/mcpify?style=flat-square&color=8b5cf6" alt="license"></a>
+  <a href="https://www.npmjs.com/package/@bahridev/mcpify"><img src="https://img.shields.io/npm/dm/@bahridev/mcpify?style=flat-square&color=a78bfa" alt="downloads"></a>
   <a href="https://github.com/bahri-hirfanoglu/mcpify"><img src="https://img.shields.io/github/stars/bahri-hirfanoglu/mcpify?style=flat-square&color=c4b5fd" alt="stars"></a>
 </p>
 
@@ -25,7 +25,7 @@
 ## Install
 
 ```bash
-npm install -g mcpify
+npm install -g @bahridev/mcpify
 ```
 
 ## Quick Start
@@ -104,7 +104,7 @@ mcpify api.yaml --tags "users,pets"
 ## Programmatic API
 
 ```typescript
-import { parseSpec, generateTools, startServer } from 'mcpify';
+import { parseSpec, generateTools, startServer } from '@bahridev/mcpify';
 
 const spec = await parseSpec('./openapi.yaml');
 const tools = generateTools(spec.operations);

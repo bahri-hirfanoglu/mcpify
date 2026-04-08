@@ -1,12 +1,12 @@
 {
-  "name": "mcpify",
+  "name": "@bahridev/mcpify",
   "version": "1.0.0",
   "description": "CLI tool that generates an MCP server from OpenAPI specs automatically",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "mcpify": "./dist/cli.js"
+    "mcpify": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",

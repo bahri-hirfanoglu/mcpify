@@ -14,24 +14,27 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #0a0a0f;
-      --bg-card: #12121a;
-      --bg-code: #1a1a2e;
-      --text: #e4e4e7;
-      --text-muted: #a1a1aa;
+      --bg: #09090b;
+      --bg-card: #111113;
+      --bg-code: #16161a;
+      --text: #fafafa;
+      --text-secondary: #d4d4d8;
+      --text-muted: #71717a;
       --accent: #818cf8;
       --accent-hover: #a5b4fc;
       --border: #27272a;
+      --border-hover: #3f3f46;
       --gradient-start: #6366f1;
       --gradient-end: #8b5cf6;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
     a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
@@ -39,11 +42,11 @@
 
     .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
 
-    /* Nav */
+    /* ── Nav ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      background: rgba(10, 10, 15, 0.8);
-      backdrop-filter: blur(12px);
+      background: rgba(9, 9, 11, 0.85);
+      backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--border);
     }
     nav .container {
@@ -54,7 +57,7 @@
       display: flex; align-items: center; gap: 10px;
       font-weight: 700; font-size: 18px; color: var(--text);
     }
-    .nav-brand img { width: 32px; height: 32px; }
+    .nav-brand img { width: 32px; height: 32px; border-radius: 6px; }
     .nav-links { display: flex; gap: 28px; align-items: center; }
     .nav-links a { color: var(--text-muted); font-size: 14px; font-weight: 500; }
     .nav-links a:hover { color: var(--text); }
@@ -67,41 +70,60 @@
     }
     .gh-btn:hover { border-color: var(--accent); color: var(--text); }
 
-    /* Hero */
+    /* ── Hero ── */
     .hero {
-      padding: 160px 0 100px;
+      padding: 160px 0 80px;
       text-align: center;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(99, 102, 241, 0.07), transparent 70%);
+      pointer-events: none;
+    }
+    .hero-logo {
+      width: 80px; height: 80px; border-radius: 20px;
+      margin-bottom: 28px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
     }
     .hero-badge {
       display: inline-block;
       padding: 6px 16px;
       border-radius: 100px;
-      background: rgba(99, 102, 241, 0.1);
-      border: 1px solid rgba(99, 102, 241, 0.2);
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.15);
       color: var(--accent);
       font-size: 13px;
       font-weight: 600;
       letter-spacing: 0.02em;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
     .hero h1 {
-      font-size: clamp(40px, 6vw, 64px);
+      font-size: clamp(38px, 5.5vw, 60px);
       font-weight: 800;
       line-height: 1.1;
       letter-spacing: -0.03em;
       margin-bottom: 20px;
     }
     .hero h1 .gradient {
-      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+      background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end), #c084fc);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
-    .hero p {
-      font-size: 18px;
+    .hero-desc {
+      font-size: 17px;
       color: var(--text-muted);
-      max-width: 560px;
-      margin: 0 auto 40px;
+      max-width: 520px;
+      margin: 0 auto 36px;
       line-height: 1.7;
     }
     .hero-actions {
@@ -115,250 +137,226 @@
     }
     .btn-primary {
       background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
-      color: white;
+      color: white; box-shadow: 0 2px 16px rgba(99, 102, 241, 0.25);
     }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); color: white; }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); color: white; box-shadow: 0 4px 24px rgba(99, 102, 241, 0.35); }
     .btn-secondary {
       background: var(--bg-card); color: var(--text);
       border: 1px solid var(--border);
     }
-    .btn-secondary:hover { border-color: var(--accent); }
+    .btn-secondary:hover { border-color: var(--border-hover); }
 
     /* Install banner */
     .install-cmd {
       display: inline-flex; align-items: center; gap: 12px;
-      margin-top: 32px;
-      padding: 14px 24px;
+      margin-top: 28px;
+      padding: 12px 20px;
       background: var(--bg-code);
       border: 1px solid var(--border);
       border-radius: 10px;
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 15px;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 14px;
       color: var(--text-muted);
       cursor: pointer;
       transition: border-color 0.2s;
     }
-    .install-cmd:hover { border-color: var(--accent); }
-    .install-cmd code { color: var(--text); }
+    .install-cmd:hover { border-color: var(--border-hover); }
+    .install-cmd code { color: var(--text-secondary); }
     .install-cmd .dollar { color: var(--accent); user-select: none; }
     .install-cmd .copy {
-      color: var(--text-muted); font-size: 13px;
-      padding: 4px 8px; border-radius: 4px;
-      background: rgba(255,255,255,0.05);
+      color: var(--text-muted); font-size: 12px;
+      padding: 3px 8px; border-radius: 4px;
+      background: rgba(255,255,255,0.06);
+      font-family: inherit;
     }
 
-    /* Code block */
+    /* ── Terminal code block ── */
     .code-showcase {
-      max-width: 720px; margin: 80px auto 0;
+      max-width: 680px; margin: 64px auto 0;
       background: var(--bg-code);
       border: 1px solid var(--border);
       border-radius: 12px;
       overflow: hidden;
+      text-align: left;
     }
     .code-header {
       display: flex; align-items: center; gap: 8px;
-      padding: 12px 16px;
+      padding: 14px 20px;
       border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
     }
-    .code-dot {
-      width: 12px; height: 12px; border-radius: 50%;
-    }
+    .code-dot { width: 12px; height: 12px; border-radius: 50%; }
     .code-dot.red { background: #ef4444; }
     .code-dot.yellow { background: #eab308; }
     .code-dot.green { background: #22c55e; }
     .code-header span {
-      margin-left: 8px; font-size: 13px; color: var(--text-muted);
+      margin-left: auto; font-size: 12px; color: var(--text-muted);
+      font-family: 'SF Mono', 'Cascadia Code', monospace;
     }
     .code-showcase pre {
-      padding: 20px 24px; margin: 0;
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 14px; line-height: 1.8;
+      padding: 20px 24px;
+      margin: 0;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.9;
       overflow-x: auto;
+      color: var(--text-secondary);
     }
-    .code-showcase .comment { color: #6b7280; }
+    .code-showcase .c { color: #52525b; }
     .code-showcase .cmd { color: #c4b5fd; }
     .code-showcase .flag { color: #67e8f9; }
-    .code-showcase .string { color: #86efac; }
-    .code-showcase .output { color: #a1a1aa; }
+    .code-showcase .str { color: #86efac; }
+    .code-showcase .out { color: #52525b; font-style: italic; }
 
-    /* Features */
-    .features {
-      padding: 100px 0;
-    }
-    .features-header {
+    /* ── Features ── */
+    .features { padding: 100px 0; }
+    .section-header {
       text-align: center;
-      margin-bottom: 60px;
+      margin-bottom: 56px;
     }
-    .features-header h2 {
-      font-size: 36px;
+    .section-header h2 {
+      font-size: 32px;
       font-weight: 700;
       letter-spacing: -0.02em;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
-    .features-header p {
+    .section-header p {
       color: var(--text-muted);
       font-size: 16px;
     }
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
     }
     .feature-card {
-      padding: 28px;
+      padding: 24px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-radius: 12px;
-      transition: border-color 0.2s;
+      transition: border-color 0.25s;
     }
-    .feature-card:hover { border-color: rgba(99, 102, 241, 0.3); }
+    .feature-card:hover { border-color: var(--border-hover); }
     .feature-icon {
-      width: 40px; height: 40px;
+      width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
-      background: rgba(99, 102, 241, 0.1);
-      border-radius: 10px;
-      margin-bottom: 16px;
-      font-size: 20px;
+      background: rgba(99, 102, 241, 0.08);
+      border: 1px solid rgba(99, 102, 241, 0.12);
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 18px;
     }
     .feature-card h3 {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 600;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
+      color: var(--text);
     }
     .feature-card p {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-muted);
       line-height: 1.6;
     }
 
-    /* How it works */
+    /* ── How it works ── */
     .how-it-works {
       padding: 80px 0;
       border-top: 1px solid var(--border);
     }
-    .how-it-works h2 {
-      text-align: center;
-      font-size: 36px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 48px;
-    }
     .steps {
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 48px;
     }
-    .step {
-      flex: 1;
-      min-width: 200px;
-      max-width: 260px;
-      text-align: center;
-      position: relative;
-    }
+    .step { text-align: center; }
     .step-num {
       display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
+      align-items: center; justify-content: center;
+      width: 36px; height: 36px;
       border-radius: 50%;
       background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
       color: white;
-      font-weight: 700;
-      font-size: 16px;
-      margin-bottom: 16px;
+      font-weight: 700; font-size: 14px;
+      margin-bottom: 14px;
     }
-    .step h3 {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .step p {
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.6;
-    }
+    .step h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .step p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
 
-    /* Config example */
+    /* ── Quick setup ── */
     .config-section {
       padding: 80px 0;
       border-top: 1px solid var(--border);
     }
-    .config-section h2 {
-      text-align: center;
-      font-size: 36px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 12px;
-    }
-    .config-section > p {
-      text-align: center;
-      color: var(--text-muted);
-      margin-bottom: 40px;
-    }
-    .config-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      max-width: 900px;
+    .config-tabs {
+      display: flex;
+      gap: 0;
+      max-width: 720px;
       margin: 0 auto;
-    }
-    @media (max-width: 700px) {
-      .config-grid { grid-template-columns: 1fr; }
-    }
-    .config-card {
-      background: var(--bg-code);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 14px;
       overflow: hidden;
+      background: var(--bg-card);
     }
-    .config-card-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
+    .config-tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .config-tab:first-child {
+      border-right: 1px solid var(--border);
+    }
+    .config-tab-header {
+      padding: 14px 20px;
       font-size: 13px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
-    .config-card pre {
-      padding: 16px;
+    .config-tab-header .tab-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent);
+    }
+    .config-tab pre {
+      padding: 20px;
       margin: 0;
-      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
-      font-size: 13px;
-      line-height: 1.7;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      line-height: 1.8;
       overflow-x: auto;
+      color: var(--text-secondary);
+      flex: 1;
     }
+    .config-tab .kw { color: #c4b5fd; }
+    .config-tab .s { color: #86efac; }
+    .config-tab .p { color: #71717a; }
 
-    /* Footer */
+    /* ── Footer ── */
     footer {
-      padding: 40px 0;
+      padding: 48px 0;
       border-top: 1px solid var(--border);
       text-align: center;
     }
     footer p {
-      font-size: 14px;
+      font-size: 13px;
       color: var(--text-muted);
     }
-    footer a { color: var(--accent); }
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--text); }
+    .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; }
 
-    /* Glow effect */
-    .hero::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 600px;
-      height: 400px;
-      background: radial-gradient(ellipse, rgba(99, 102, 241, 0.08), transparent 70%);
-      pointer-events: none;
-    }
-    .hero { position: relative; }
-
-    @media (max-width: 640px) {
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
       .nav-links a:not(.gh-btn) { display: none; }
       .hero { padding: 120px 0 60px; }
       .features-grid { grid-template-columns: 1fr; }
+      .steps { grid-template-columns: repeat(2, 1fr); }
+      .config-tabs { flex-direction: column; }
+      .config-tab:first-child { border-right: none; border-bottom: 1px solid var(--border); }
     }
   </style>
 </head>
@@ -384,21 +382,19 @@
 
 <section class="hero">
   <div class="container">
+    <img src="logo.png" alt="mcpify" class="hero-logo">
     <div class="hero-badge">Open Source &middot; MIT Licensed</div>
-    <h1>
-      OpenAPI to MCP<br>
-      <span class="gradient">in seconds</span>
-    </h1>
-    <p>
+    <h1>OpenAPI to MCP<br><span class="gradient">in seconds</span></h1>
+    <p class="hero-desc">
       Generate an MCP server from any OpenAPI specification.
       Let AI assistants interact with your REST APIs instantly.
     </p>
     <div class="hero-actions">
       <a href="https://github.com/bahri-hirfanoglu/mcpify" class="btn btn-primary">Get Started</a>
-      <a href="https://www.npmjs.com/package/mcpify" class="btn btn-secondary">View on npm</a>
+      <a href="https://www.npmjs.com/package/@bahridev/mcpify" class="btn btn-secondary">View on npm</a>
     </div>
-    <div class="install-cmd" onclick="navigator.clipboard.writeText('npm install -g mcpify')">
-      <span><span class="dollar">$ </span><code>npm install -g mcpify</code></span>
+    <div class="install-cmd" onclick="navigator.clipboard.writeText('npm install -g @bahridev/mcpify')">
+      <span><span class="dollar">$ </span><code>npm install -g @bahridev/mcpify</code></span>
       <span class="copy">copy</span>
     </div>
 
@@ -407,25 +403,25 @@
         <div class="code-dot red"></div>
         <div class="code-dot yellow"></div>
         <div class="code-dot green"></div>
-        <span>Terminal</span>
+        <span>terminal</span>
       </div>
-<pre><span class="comment"># Start an MCP server from any OpenAPI spec</span>
-<span class="cmd">mcpify</span> <span class="string">./openapi.yaml</span>
+<pre><span class="c"># Start an MCP server from any OpenAPI spec</span>
+<span class="cmd">mcpify</span> <span class="str">./openapi.yaml</span>
 
-<span class="comment"># With authentication</span>
-<span class="cmd">mcpify</span> <span class="string">./api.yaml</span> <span class="flag">--bearer-token</span> <span class="string">$TOKEN</span>
+<span class="c"># With authentication</span>
+<span class="cmd">mcpify</span> <span class="str">./api.yaml</span> <span class="flag">--bearer-token</span> <span class="str">$TOKEN</span>
 
-<span class="comment"># Filter specific operations</span>
-<span class="cmd">mcpify</span> <span class="string">./api.yaml</span> <span class="flag">--include</span> <span class="string">"get*,list*"</span> <span class="flag">--exclude</span> <span class="string">"delete*"</span>
+<span class="c"># Filter specific operations</span>
+<span class="cmd">mcpify</span> <span class="str">./api.yaml</span> <span class="flag">--include</span> <span class="str">"get*,list*"</span> <span class="flag">--exclude</span> <span class="str">"delete*"</span>
 
-<span class="output">mcpify v1.0.0 — serving 24 tools from "My API"</span></pre>
+<span class="out">mcpify v1.0.0 — serving 24 tools from "My API"</span></pre>
     </div>
   </div>
 </section>
 
 <section class="features" id="features">
   <div class="container">
-    <div class="features-header">
+    <div class="section-header">
       <h2>Everything you need</h2>
       <p>Zero config required. Just point it at your spec.</p>
     </div>
@@ -451,7 +447,7 @@
         <p>Use as a CLI tool or import as a library. Full TypeScript types included.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">&#x1F3F7;</div>
+        <div class="feature-icon">&#x1F3F7;&#xFE0F;</div>
         <h3>Tool Annotations</h3>
         <p>Automatically marks GET as read-only, DELETE as destructive. AI knows what's safe.</p>
       </div>
@@ -466,7 +462,10 @@
 
 <section class="how-it-works" id="how-it-works">
   <div class="container">
-    <h2>How it works</h2>
+    <div class="section-header">
+      <h2>How it works</h2>
+      <p>From spec to server in four steps.</p>
+    </div>
     <div class="steps">
       <div class="step">
         <div class="step-num">1</div>
@@ -494,41 +493,49 @@
 
 <section class="config-section" id="config">
   <div class="container">
-    <h2>Quick setup</h2>
-    <p>Add to your AI assistant config and start using your API in seconds.</p>
-    <div class="config-grid">
-      <div class="config-card">
-        <div class="config-card-header">Claude Desktop</div>
-<pre>{
-  "mcpServers": {
-    "my-api": {
-      "command": "mcpify",
-      "args": [
-        "./openapi.yaml",
-        "--bearer-token",
-        "sk-..."
-      ]
-    }
-  }
-}</pre>
+    <div class="section-header">
+      <h2>Quick setup</h2>
+      <p>Add to your AI assistant config and start using your API in seconds.</p>
+    </div>
+    <div class="config-tabs">
+      <div class="config-tab">
+        <div class="config-tab-header">
+          <span class="tab-dot"></span>
+          Claude Desktop
+        </div>
+<pre><span class="p">{</span>
+  <span class="s">"mcpServers"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s">"my-api"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s">"command"</span><span class="p">:</span> <span class="s">"mcpify"</span><span class="p">,</span>
+      <span class="s">"args"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s">"./openapi.yaml"</span><span class="p">,</span>
+        <span class="s">"--bearer-token"</span><span class="p">,</span>
+        <span class="s">"sk-..."</span>
+      <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span></pre>
       </div>
-      <div class="config-card">
-        <div class="config-card-header">Programmatic API</div>
-<pre><span style="color:#c4b5fd">import</span> { parseSpec, generateTools,
-  startServer } <span style="color:#c4b5fd">from</span> <span style="color:#86efac">'mcpify'</span>;
+      <div class="config-tab">
+        <div class="config-tab-header">
+          <span class="tab-dot"></span>
+          Programmatic API
+        </div>
+<pre><span class="kw">import</span> { parseSpec, generateTools,
+  startServer } <span class="kw">from</span> <span class="s">'@bahridev/mcpify'</span>
 
-<span style="color:#c4b5fd">const</span> spec = <span style="color:#c4b5fd">await</span> parseSpec(<span style="color:#86efac">'./api.yaml'</span>);
-<span style="color:#c4b5fd">const</span> tools = generateTools(spec.operations);
+<span class="kw">const</span> spec = <span class="kw">await</span> parseSpec(<span class="s">'./api.yaml'</span>)
+<span class="kw">const</span> tools = generateTools(spec.operations)
 
-<span style="color:#c4b5fd">await</span> startServer({
+<span class="kw">await</span> startServer({
   spec, tools,
   operations: spec.operations,
   baseUrl: spec.defaultServerUrl,
-  auth: { type: <span style="color:#86efac">'none'</span> },
-  transport: <span style="color:#86efac">'stdio'</span>,
-  port: 3100,
-  maxResponseSize: 50 * 1024,
-});</pre>
+  auth: { type: <span class="s">'none'</span> },
+  transport: <span class="s">'stdio'</span>,
+  port: <span class="p">3100</span>,
+  maxResponseSize: <span class="p">50 * 1024</span>,
+})</pre>
       </div>
     </div>
   </div>
@@ -536,12 +543,12 @@
 
 <footer>
   <div class="container">
-    <p>
-      Built by <a href="https://github.com/bahri-hirfanoglu">Bahri Hirfanoglu</a> &middot;
-      <a href="https://github.com/bahri-hirfanoglu/mcpify">GitHub</a> &middot;
-      <a href="https://www.npmjs.com/package/mcpify">npm</a> &middot;
-      MIT License
-    </p>
+    <div class="footer-links">
+      <a href="https://github.com/bahri-hirfanoglu/mcpify">GitHub</a>
+      <a href="https://www.npmjs.com/package/@bahridev/mcpify">npm</a>
+      <a href="https://github.com/bahri-hirfanoglu/mcpify/blob/master/LICENSE">MIT License</a>
+    </div>
+    <p>Built by <a href="https://github.com/bahri-hirfanoglu">Bahri Hirfanoglu</a></p>
   </div>
 </footer>
 
