@@ -1,0 +1,158 @@
+openapi: '3.0.3'
+info:
+  title: Complex API
+  version: '2.0.0'
+  description: A complex API with multiple auth, nested schemas, and edge cases
+servers:
+  - url: https://api.complex.com
+security:
+  - bearerAuth: []
+paths:
+  /users:
+    get:
+      summary: List users
+      tags:
+        - users
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: X-Request-Id
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A list of users
+    post:
+      operationId: createUser
+      summary: Create a user
+      tags:
+        - users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                role:
+                  oneOf:
+                    - type: object
+                      properties:
+                        type:
+                          type: string
+                          enum: [admin]
+                        permissions:
+                          type: array
+                          items:
+                            type: string
+                    - type: object
+                      properties:
+                        type:
+                          type: string
+                          enum: [user]
+      responses:
+        '201':
+          description: User created
+  /users/{userId}:
+    get:
+      operationId: getUser
+      summary: Get a user by ID
+      tags:
+        - users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A user
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      tags:
+        - users
+      security:
+        - apiKeyAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted
+  /items:
+    get:
+      operationId: listItems
+      summary: List items
+      tags:
+        - items
+      responses:
+        '200':
+          description: A list of items
+  /items/{itemId}:
+    parameters:
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getItem
+      summary: Get an item
+      tags:
+        - items
+      responses:
+        '200':
+          description: An item
+    put:
+      operationId: updateItem
+      summary: Update an item
+      tags:
+        - items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                price:
+                  type: number
+      responses:
+        '200':
+          description: Updated item
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    apiKeyAuth:
+      type: apiKey
+      name: X-API-Key
+      in: header
