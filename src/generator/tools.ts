@@ -124,8 +124,46 @@ function buildDescription(op: ParsedOperation): string {
   if (parts.length === 0) {
     parts.push(`${op.method} ${op.path}`);
   }
+
+  if (op.responseSchema) {
+    const hint = summarizeSchema(op.responseSchema);
+    if (hint) parts.push(`Returns: ${hint}`);
+  }
+
   const text = parts.join('\n\n');
   return text.length > 1024 ? text.slice(0, 1021) + '...' : text;
+}
+
+function summarizeSchema(schema: Record<string, unknown>): string {
+  const type = schema.type as string | undefined;
+
+  if (type === 'array') {
+    const items = schema.items as Record<string, unknown> | undefined;
+    if (items) {
+      const itemType = summarizeObjectSchema(items);
+      return `array of ${itemType}`;
+    }
+    return 'array';
+  }
+
+  if (type === 'object') {
+    return summarizeObjectSchema(schema);
+  }
+
+  if (type) return type;
+  return 'object';
+}
+
+function summarizeObjectSchema(schema: Record<string, unknown>): string {
+  const props = schema.properties as
+    | Record<string, Record<string, unknown>>
+    | undefined;
+  if (!props) return 'object';
+
+  const keys = Object.keys(props);
+  if (keys.length === 0) return 'object';
+  if (keys.length <= 5) return `{${keys.join(', ')}}`;
+  return `{${keys.slice(0, 5).join(', ')}, ...${keys.length - 5} more}`;
 }
 
 function buildAnnotations(

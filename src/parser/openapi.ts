@@ -86,6 +86,8 @@ function extractOperations3(
         idCounts,
       );
 
+      const responseSchema = extractResponseSchema3(op);
+
       operations.push({
         operationId,
         method: method.toUpperCase(),
@@ -95,6 +97,7 @@ function extractOperations3(
         tags: op.tags ?? [],
         parameters: mergedParams,
         requestBody,
+        responseSchema,
         security: opSecurity,
         servers,
       });
@@ -235,6 +238,8 @@ function extractOperations2(
         idCounts,
       );
 
+      const responseSchema = extractResponseSchema2(op);
+
       operations.push({
         operationId,
         method: method.toUpperCase(),
@@ -244,6 +249,7 @@ function extractOperations2(
         tags: op.tags ?? [],
         parameters: allParams,
         requestBody,
+        responseSchema,
         security: opSecurity,
         servers: [],
       });
@@ -300,6 +306,39 @@ function swagger2ParamToSchema(
   if (p.maximum !== undefined) schema.maximum = p.maximum;
   if (p.type === 'array' && p.items) schema.items = p.items;
   return schema;
+}
+
+function extractResponseSchema3(
+  op: OpenAPIV3.OperationObject,
+): Record<string, unknown> | undefined {
+  if (!op.responses) return undefined;
+
+  for (const code of ['200', '201', '202', 'default']) {
+    const resp = op.responses[code] as OpenAPIV3.ResponseObject | undefined;
+    if (!resp?.content) continue;
+
+    const jsonContent = resp.content['application/json'];
+    if (jsonContent?.schema) {
+      return jsonContent.schema as Record<string, unknown>;
+    }
+  }
+
+  return undefined;
+}
+
+function extractResponseSchema2(
+  op: OpenAPIV2.OperationObject,
+): Record<string, unknown> | undefined {
+  if (!op.responses) return undefined;
+
+  for (const code of ['200', '201', '202', 'default']) {
+    const resp = op.responses[code] as OpenAPIV2.Response | undefined;
+    if (resp && 'schema' in resp && resp.schema) {
+      return resp.schema as Record<string, unknown>;
+    }
+  }
+
+  return undefined;
 }
 
 // ── Shared ──

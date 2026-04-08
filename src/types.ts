@@ -35,6 +35,7 @@ export interface ParsedOperation {
   tags: string[];
   parameters: ParsedParameter[];
   requestBody?: ParsedRequestBody;
+  responseSchema?: Record<string, unknown>;
   security: SecurityRequirement[];
   servers: string[];
 }
