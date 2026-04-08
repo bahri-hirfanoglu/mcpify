@@ -78,4 +78,5 @@ export interface ServerConfig {
   transport: 'stdio' | 'http';
   port: number;
   maxResponseSize: number;
+  verbose?: boolean;
 }

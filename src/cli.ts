@@ -85,6 +85,7 @@ program
         transport: config.transport!,
         port: config.port!,
         maxResponseSize: config.maxResponseSize! * 1024,
+        verbose: config.verbose,
       };
 
       await startServer(serverConfig);
