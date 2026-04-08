@@ -20,10 +20,30 @@
     "openapi",
     "swagger",
     "cli",
-    "model-context-protocol"
+    "model-context-protocol",
+    "ai",
+    "api",
+    "rest",
+    "tool",
+    "server",
+    "claude",
+    "llm"
   ],
   "author": "Bahri Hirfanoglu",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bahri-hirfanoglu/mcpify.git"
+  },
+  "homepage": "https://bahri-hirfanoglu.github.io/mcpify",
+  "bugs": {
+    "url": "https://github.com/bahri-hirfanoglu/mcpify/issues"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18"
   },

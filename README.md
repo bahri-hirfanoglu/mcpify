@@ -1,6 +1,26 @@
-# mcpify
+<p align="center">
+  <img src="docs/logo.svg" width="120" alt="mcpify logo">
+</p>
 
-Generate an MCP (Model Context Protocol) server from any OpenAPI specification. Lets AI assistants like Claude interact with REST APIs directly.
+<h1 align="center">mcpify</h1>
+
+<p align="center">
+  <strong>OpenAPI to MCP in seconds</strong>
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/mcpify"><img src="https://img.shields.io/npm/v/mcpify?style=flat-square&color=6366f1" alt="npm version"></a>
+  <a href="https://github.com/bahri-hirfanoglu/mcpify/blob/master/LICENSE"><img src="https://img.shields.io/npm/l/mcpify?style=flat-square&color=8b5cf6" alt="license"></a>
+  <a href="https://www.npmjs.com/package/mcpify"><img src="https://img.shields.io/npm/dm/mcpify?style=flat-square&color=a78bfa" alt="downloads"></a>
+  <a href="https://github.com/bahri-hirfanoglu/mcpify"><img src="https://img.shields.io/github/stars/bahri-hirfanoglu/mcpify?style=flat-square&color=c4b5fd" alt="stars"></a>
+</p>
+
+<p align="center">
+  Generate an MCP server from any OpenAPI specification.<br>
+  Let AI assistants interact with your REST APIs instantly.
+</p>
+
+---
 
 ## Install
 
