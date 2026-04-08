@@ -7,7 +7,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import type { ServerConfig, ParsedOperation } from '../types.js';
+import type { ServerConfig } from '../types.js';
 import { executeRequest } from './http-client.js';
 
 export async function startServer(config: ServerConfig): Promise<Server> {
@@ -22,11 +22,6 @@ export async function startServer(config: ServerConfig): Promise<Server> {
       },
     },
   );
-
-  const operationMap = new Map<string, ParsedOperation>();
-  for (const op of config.operations) {
-    operationMap.set(op.operationId, op);
-  }
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
@@ -43,7 +38,7 @@ export async function startServer(config: ServerConfig): Promise<Server> {
     const toolName = request.params.name;
     const args = (request.params.arguments ?? {}) as Record<string, unknown>;
 
-    const operation = operationMap.get(toolName);
+    const operation = config.operations.find((op) => op.operationId === toolName);
     if (!operation) {
       return {
         content: [{ type: 'text' as const, text: `Unknown tool: ${toolName}` }],
