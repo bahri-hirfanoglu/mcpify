@@ -12,14 +12,20 @@ export async function executeRequest(
   baseUrl: string,
   auth: AuthConfig,
   maxResponseSize: number = 50 * 1024,
+  verbose: boolean = false,
 ): Promise<CallToolResult> {
   try {
     const url = buildUrl(operation, args, baseUrl);
     const headers = buildHeaders(operation, args, auth);
     const body = buildBody(args);
 
+    if (verbose) {
+      process.stderr.write(`→ ${operation.method} ${url}\n`);
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
+    const start = Date.now();
 
     let response: Response;
     try {
@@ -33,15 +39,36 @@ export async function executeRequest(
       clearTimeout(timeout);
     }
 
-    return await handleResponse(response, maxResponseSize);
+    const duration = Date.now() - start;
+    const result = await handleResponse(response, maxResponseSize);
+
+    if (verbose) {
+      const size = result.content[0]?.text.length ?? 0;
+      const status = response.status;
+      const icon = result.isError ? '✗' : '✓';
+      process.stderr.write(
+        `← ${icon} ${status} ${duration}ms ${formatSize(size)}\n`,
+      );
+    }
+
+    return result;
   } catch (err) {
     const message =
       err instanceof Error ? err.message : 'Unknown error';
+    if (verbose) {
+      process.stderr.write(`← ✗ ERROR: ${message}\n`);
+    }
     return {
       content: [{ type: 'text', text: `Request failed: ${message}` }],
       isError: true,
     };
   }
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
 }
 
 function buildUrl(
@@ -51,7 +78,6 @@ function buildUrl(
 ): string {
   let path = operation.path;
 
-  // Substitute path parameters
   for (const param of operation.parameters) {
     if (param.in === 'path' && args[param.name] != null) {
       path = path.replace(
@@ -63,7 +89,6 @@ function buildUrl(
 
   const url = new URL(path, baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
 
-  // Add query parameters
   for (const param of operation.parameters) {
     if (param.in === 'query' && args[param.name] != null) {
       url.searchParams.set(param.name, String(args[param.name]));
@@ -86,7 +111,6 @@ function buildHeaders(
     headers['Content-Type'] = operation.requestBody.contentType;
   }
 
-  // Merge custom headers from _headers arg
   const customHeaders = args._headers as
     | Record<string, unknown>
     | undefined;
@@ -154,7 +178,6 @@ async function handleResponse(
     };
   }
 
-  // Binary response
   const size = response.headers.get('content-length') ?? 'unknown';
   return {
     content: [

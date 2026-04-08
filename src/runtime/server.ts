@@ -52,6 +52,7 @@ export async function startServer(config: ServerConfig): Promise<Server> {
       config.baseUrl,
       config.auth,
       config.maxResponseSize,
+      config.verbose,
     );
 
     return result as typeof result & Record<string, unknown>;
