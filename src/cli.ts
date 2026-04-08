@@ -151,9 +151,10 @@ function printToolsSummary(tools: McpToolDefinition[], spec: ParsedSpec): void {
   process.stderr.write(`${'─'.repeat(nameWidth)}  ${'─'.repeat(50)}\n`);
 
   for (const tool of tools) {
-    const desc = tool.description.length > 60
-      ? tool.description.slice(0, 57) + '...'
-      : tool.description;
+    const firstLine = tool.description.split('\n')[0];
+    const desc = firstLine.length > 60
+      ? firstLine.slice(0, 57) + '...'
+      : firstLine;
     const hints: string[] = [];
     if (tool.annotations?.readOnlyHint) hints.push('read-only');
     if (tool.annotations?.destructiveHint) hints.push('destructive');

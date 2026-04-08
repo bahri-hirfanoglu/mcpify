@@ -85,7 +85,7 @@ describe('E2E: full pipeline', () => {
     expect(names).toEqual(['createPet', 'deletePet', 'getPet', 'listPets']);
 
     const listPets = result.tools.find((t) => t.name === 'listPets')!;
-    expect(listPets.description).toBe('List all pets');
+    expect(listPets.description).toContain('List all pets');
     expect(listPets.inputSchema.properties).toHaveProperty('limit');
   });
 
