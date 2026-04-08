@@ -1,0 +1,83 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Swagger 2.0 Petstore",
+    "version": "1.0.0",
+    "description": "A sample Swagger 2.0 API"
+  },
+  "host": "petstore.example.com",
+  "basePath": "/v1",
+  "schemes": ["https"],
+  "security": [
+    { "apiKey": [] }
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "listPets",
+        "summary": "List all pets",
+        "tags": ["pets"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "type": "integer",
+            "maximum": 100,
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": { "description": "A list of pets" }
+        }
+      },
+      "post": {
+        "operationId": "createPet",
+        "summary": "Create a pet",
+        "tags": ["pets"],
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": { "type": "string" },
+                "tag": { "type": "string" }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": { "description": "Pet created" }
+        }
+      }
+    },
+    "/pets/{petId}": {
+      "get": {
+        "operationId": "getPet",
+        "summary": "Get a pet by ID",
+        "tags": ["pets"],
+        "parameters": [
+          {
+            "name": "petId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": { "description": "A pet" }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "apiKey": {
+      "type": "apiKey",
+      "name": "X-API-Key",
+      "in": "header"
+    }
+  }
+}
