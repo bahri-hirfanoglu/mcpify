@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.svg" width="120" alt="mcpify logo">
+  <img src="docs/logo.png" width="120" alt="mcpify logo">
 </p>
 
 <h1 align="center">mcpify</h1>
