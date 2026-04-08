@@ -27,6 +27,8 @@ program
   .option('--exclude <patterns>', 'exclude operations matching glob patterns (comma-separated)')
   .option('--tags <tags>', 'only include operations with these tags (comma-separated)')
   .option('--max-response-size <kb>', 'max response size in KB')
+  .option('--naming <style>', 'tool naming style (camelCase|snake_case|original)')
+  .option('--prefix <prefix>', 'prefix to add to all tool names')
   .option('--verbose', 'verbose logging to stderr')
   .option('--dry-run', 'parse spec and list tools without starting server')
   .option('--watch', 'watch spec file for changes and reload tools')
@@ -52,6 +54,8 @@ program
       if (config.include) filterOptions.include = config.include;
       if (config.exclude) filterOptions.exclude = config.exclude;
       if (config.tags) filterOptions.tags = config.tags;
+      if (opts.naming) filterOptions.naming = opts.naming as FilterOptions['naming'];
+      if (opts.prefix) filterOptions.prefix = opts.prefix;
 
       const tools = generateTools(spec.operations, filterOptions);
 
