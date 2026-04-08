@@ -6,7 +6,7 @@ import { generateTools } from './generator/tools.js';
 import { resolveAuth } from './auth/handler.js';
 import { startServer } from './runtime/server.js';
 import { loadConfig, mergeConfig } from './config.js';
-import type { FilterOptions } from './types.js';
+import type { FilterOptions, McpToolDefinition, ParsedSpec } from './types.js';
 
 const program = new Command();
 
@@ -27,6 +27,7 @@ program
   .option('--tags <tags>', 'only include operations with these tags (comma-separated)')
   .option('--max-response-size <kb>', 'max response size in KB')
   .option('--verbose', 'verbose logging to stderr')
+  .option('--dry-run', 'parse spec and list tools without starting server')
   .action(async (specArg: string | undefined, opts: Record<string, string>) => {
     try {
       const fileConfig = await loadConfig();
@@ -55,6 +56,11 @@ program
       if (tools.length === 0) {
         process.stderr.write('Error: no tools generated from spec\n');
         process.exit(1);
+      }
+
+      if (opts.dryRun) {
+        printToolsSummary(tools, spec);
+        return;
       }
 
       const auth = resolveAuth(
@@ -86,3 +92,29 @@ program
   });
 
 program.parse();
+
+function printToolsSummary(tools: McpToolDefinition[], spec: ParsedSpec): void {
+  process.stderr.write(`\n${spec.title} v${spec.version}\n`);
+  process.stderr.write(`Base URL: ${spec.defaultServerUrl}\n`);
+  process.stderr.write(`Tools: ${tools.length}\n\n`);
+
+  const nameWidth = Math.max(4, ...tools.map((t) => t.name.length));
+
+  process.stderr.write(
+    `${'NAME'.padEnd(nameWidth)}  ${'DESCRIPTION'}\n`,
+  );
+  process.stderr.write(`${'─'.repeat(nameWidth)}  ${'─'.repeat(50)}\n`);
+
+  for (const tool of tools) {
+    const desc = tool.description.length > 60
+      ? tool.description.slice(0, 57) + '...'
+      : tool.description;
+    const hints: string[] = [];
+    if (tool.annotations?.readOnlyHint) hints.push('read-only');
+    if (tool.annotations?.destructiveHint) hints.push('destructive');
+    const suffix = hints.length > 0 ? ` [${hints.join(', ')}]` : '';
+    process.stderr.write(`${tool.name.padEnd(nameWidth)}  ${desc}${suffix}\n`);
+  }
+
+  process.stderr.write('\n');
+}
