@@ -13,6 +13,8 @@ export interface McpifyConfig {
   exclude?: string[];
   tags?: string[];
   maxResponseSize?: number;
+  naming?: 'camelCase' | 'snake_case' | 'original';
+  prefix?: string;
   verbose?: boolean;
 }
 

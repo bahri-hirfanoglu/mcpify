@@ -121,6 +121,30 @@ describe('generateTools', () => {
     });
   });
 
+  it('should convert tool names to snake_case', () => {
+    const ops = [makeOp({ operationId: 'listAllPets' })];
+    const tools = generateTools(ops, { naming: 'snake_case' });
+    expect(tools[0].name).toBe('list_all_pets');
+  });
+
+  it('should convert tool names to camelCase', () => {
+    const ops = [makeOp({ operationId: 'get_all_users' })];
+    const tools = generateTools(ops, { naming: 'camelCase' });
+    expect(tools[0].name).toBe('getAllUsers');
+  });
+
+  it('should add prefix to tool names', () => {
+    const ops = [makeOp({ operationId: 'listPets' })];
+    const tools = generateTools(ops, { prefix: 'myapi_' });
+    expect(tools[0].name).toBe('myapi_listPets');
+  });
+
+  it('should apply both naming and prefix', () => {
+    const ops = [makeOp({ operationId: 'listAllPets' })];
+    const tools = generateTools(ops, { naming: 'snake_case', prefix: 'api_' });
+    expect(tools[0].name).toBe('api_list_all_pets');
+  });
+
   it('should truncate description at 1024 chars', () => {
     const long = 'A'.repeat(2000);
     const ops = [makeOp({ summary: long })];

@@ -67,6 +67,8 @@ export interface FilterOptions {
   include?: string[];
   exclude?: string[];
   tags?: string[];
+  naming?: 'camelCase' | 'snake_case' | 'original';
+  prefix?: string;
 }
 
 export interface ServerConfig {

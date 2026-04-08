@@ -17,7 +17,11 @@ export function generateTools(
     );
   }
 
-  return filtered.map(operationToTool);
+  return filtered.map((op) => {
+    const tool = operationToTool(op);
+    tool.name = transformName(tool.name, options?.naming, options?.prefix);
+    return tool;
+  });
 }
 
 function filterOperations(
@@ -137,4 +141,40 @@ function buildAnnotations(
     default:
       return undefined;
   }
+}
+
+function transformName(
+  name: string,
+  naming?: 'camelCase' | 'snake_case' | 'original',
+  prefix?: string,
+): string {
+  let result = name;
+
+  if (naming === 'snake_case') {
+    result = toSnakeCase(result);
+  } else if (naming === 'camelCase') {
+    result = toCamelCase(result);
+  }
+
+  if (prefix) {
+    result = prefix + result;
+  }
+
+  return result;
+}
+
+function toSnakeCase(str: string): string {
+  return str
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
+    .replace(/[-\s]+/g, '_')
+    .toLowerCase();
+}
+
+function toCamelCase(str: string): string {
+  return str
+    .replace(/[-_\s]+(.)?/g, (_, c: string | undefined) =>
+      c ? c.toUpperCase() : '',
+    )
+    .replace(/^[A-Z]/, (c) => c.toLowerCase());
 }
