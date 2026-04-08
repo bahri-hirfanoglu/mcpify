@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { watch } from 'node:fs';
 import { parseSpec } from './parser/openapi.js';
 import { generateTools } from './generator/tools.js';
 import { resolveAuth } from './auth/handler.js';
 import { startServer } from './runtime/server.js';
 import { loadConfig, mergeConfig } from './config.js';
-import type { FilterOptions, McpToolDefinition, ParsedSpec } from './types.js';
+import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
 
@@ -28,6 +29,7 @@ program
   .option('--max-response-size <kb>', 'max response size in KB')
   .option('--verbose', 'verbose logging to stderr')
   .option('--dry-run', 'parse spec and list tools without starting server')
+  .option('--watch', 'watch spec file for changes and reload tools')
   .action(async (specArg: string | undefined, opts: Record<string, string>) => {
     try {
       const fileConfig = await loadConfig();
@@ -74,7 +76,7 @@ program
 
       const baseUrl = config.baseUrl ?? spec.defaultServerUrl;
 
-      await startServer({
+      const serverConfig: ServerConfig = {
         spec,
         tools,
         operations: spec.operations,
@@ -83,7 +85,13 @@ program
         transport: config.transport!,
         port: config.port!,
         maxResponseSize: config.maxResponseSize! * 1024,
-      });
+      };
+
+      await startServer(serverConfig);
+
+      if (opts.watch && !specSource.startsWith('http')) {
+        watchSpec(specSource, serverConfig, filterOptions);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${message}\n`);
@@ -92,6 +100,38 @@ program
   });
 
 program.parse();
+
+function watchSpec(
+  specPath: string,
+  serverConfig: ServerConfig,
+  filterOptions: FilterOptions,
+): void {
+  let debounce: ReturnType<typeof setTimeout> | undefined;
+
+  process.stderr.write(`Watching ${specPath} for changes...\n`);
+
+  watch(specPath, () => {
+    if (debounce) clearTimeout(debounce);
+    debounce = setTimeout(async () => {
+      try {
+        process.stderr.write('Spec changed, reloading...\n');
+        const spec = await parseSpec(specPath);
+        const tools = generateTools(spec.operations, filterOptions);
+
+        serverConfig.spec = spec;
+        serverConfig.tools = tools;
+        serverConfig.operations = spec.operations;
+
+        process.stderr.write(
+          `Reloaded: ${tools.length} tools from "${spec.title}"\n`,
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`Reload failed: ${msg}\n`);
+      }
+    }, 300);
+  });
+}
 
 function printToolsSummary(tools: McpToolDefinition[], spec: ParsedSpec): void {
   process.stderr.write(`\n${spec.title} v${spec.version}\n`);
