@@ -13,7 +13,8 @@ program
   .name('mcpify')
   .description('Generate an MCP server from an OpenAPI spec')
   .version('1.0.0')
-  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .argument('[spec]', 'OpenAPI spec file path or URL')
+  .option('--spec <source>', 'OpenAPI spec file path or URL (alternative to positional argument)')
   .option('--transport <type>', 'transport type (stdio|http)', 'stdio')
   .option('--port <number>', 'HTTP port', '3100')
   .option('--base-url <url>', 'API base URL override')
@@ -25,8 +26,15 @@ program
   .option('--tags <tags>', 'only include operations with these tags (comma-separated)')
   .option('--max-response-size <kb>', 'max response size in KB', '50')
   .option('--verbose', 'verbose logging to stderr')
-  .action(async (specSource: string, opts: Record<string, string>) => {
+  .action(async (specArg: string | undefined, opts: Record<string, string>) => {
     try {
+      const specSource = opts.spec ?? specArg;
+
+      if (!specSource || typeof specSource !== 'string') {
+        process.stderr.write('Error: spec source is required. Usage: mcpify <spec> or mcpify --spec <source>\n');
+        process.exit(1);
+      }
+
       if (opts.verbose) {
         process.stderr.write(`Parsing spec: ${specSource}\n`);
       }
