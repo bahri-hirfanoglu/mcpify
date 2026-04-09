@@ -1,5 +1,6 @@
 import type { ParsedOperation, AuthConfig } from '../types.js';
 import { applyAuth } from '../auth/handler.js';
+import { sanitizeKey, restoreKeys } from '../sanitize.js';
 
 interface CallToolResult {
   content: Array<{ type: string; text: string }>;
@@ -13,11 +14,12 @@ export async function executeRequest(
   auth: AuthConfig,
   maxResponseSize: number = 50 * 1024,
   verbose: boolean = false,
+  customHeaders?: Record<string, string>,
 ): Promise<CallToolResult> {
   try {
     const url = buildUrl(operation, args, baseUrl);
-    const headers = buildHeaders(operation, args, auth);
-    const body = buildBody(args);
+    const headers = buildHeaders(operation, args, auth, customHeaders);
+    const body = buildBody(args, operation);
 
     if (verbose) {
       process.stderr.write(`→ ${operation.method} ${url}\n`);
@@ -79,10 +81,11 @@ function buildUrl(
   let path = operation.path;
 
   for (const param of operation.parameters) {
-    if (param.in === 'path' && args[param.name] != null) {
+    const argKey = sanitizeKey(param.name);
+    if (param.in === 'path' && args[argKey] != null) {
       path = path.replace(
         `{${param.name}}`,
-        encodeURIComponent(String(args[param.name])),
+        encodeURIComponent(String(args[argKey])),
       );
     }
   }
@@ -90,8 +93,9 @@ function buildUrl(
   const url = new URL(path, baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
 
   for (const param of operation.parameters) {
-    if (param.in === 'query' && args[param.name] != null) {
-      url.searchParams.set(param.name, String(args[param.name]));
+    const argKey = sanitizeKey(param.name);
+    if (param.in === 'query' && args[argKey] != null) {
+      url.searchParams.set(param.name, String(args[argKey]));
     }
   }
 
@@ -102,21 +106,33 @@ function buildHeaders(
   operation: ParsedOperation,
   args: Record<string, unknown>,
   auth: AuthConfig,
+  customHeaders?: Record<string, string>,
 ): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
 
+  if (customHeaders) {
+    Object.assign(headers, customHeaders);
+  }
+
   if (operation.requestBody) {
     headers['Content-Type'] = operation.requestBody.contentType;
   }
 
-  const customHeaders = args._headers as
+  const operationHeaders = args._headers as
     | Record<string, unknown>
     | undefined;
-  if (customHeaders) {
-    for (const [key, value] of Object.entries(customHeaders)) {
-      if (value != null) headers[key] = String(value);
+  if (operationHeaders) {
+    // Restore original header names from sanitized keys
+    const headerParams = operation.parameters.filter((p) => p.in === 'header');
+    const reverseMap = new Map<string, string>();
+    for (const p of headerParams) {
+      reverseMap.set(sanitizeKey(p.name), p.name);
+    }
+    for (const [key, value] of Object.entries(operationHeaders)) {
+      const originalName = reverseMap.get(key) ?? key;
+      if (value != null) headers[originalName] = String(value);
     }
   }
 
@@ -125,9 +141,13 @@ function buildHeaders(
   return headers;
 }
 
-function buildBody(args: Record<string, unknown>): string | undefined {
+function buildBody(
+  args: Record<string, unknown>,
+  operation: ParsedOperation,
+): string | undefined {
   if (args._body == null) return undefined;
-  return JSON.stringify(args._body);
+  const restored = restoreKeys(args._body, operation.requestBody?.schema);
+  return JSON.stringify(restored);
 }
 
 async function handleResponse(

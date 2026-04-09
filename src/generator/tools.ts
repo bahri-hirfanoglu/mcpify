@@ -4,6 +4,7 @@ import type {
   McpToolDefinition,
   FilterOptions,
 } from '../types.js';
+import { sanitizeSchema } from '../sanitize.js';
 
 export function generateTools(
   operations: ParsedOperation[],
@@ -110,7 +111,7 @@ function operationToTool(op: ParsedOperation): McpToolDefinition {
   return {
     name: op.operationId,
     description,
-    inputSchema,
+    inputSchema: sanitizeSchema(inputSchema),
     ...(annotations ? { annotations } : {}),
   };
 }

@@ -15,6 +15,7 @@ export interface McpifyConfig {
   maxResponseSize?: number;
   naming?: 'camelCase' | 'snake_case' | 'original';
   prefix?: string;
+  headers?: Record<string, string>;
   verbose?: boolean;
 }
 
@@ -57,6 +58,22 @@ export function mergeConfig(
     maxResponseSize: cliOpts.maxResponseSize
       ? parseInt(cliOpts.maxResponseSize, 10)
       : fileConfig.maxResponseSize ?? 50,
+    headers: parseHeaders(cliOpts.header) ?? fileConfig.headers,
     verbose: cliOpts.verbose !== undefined ? true : fileConfig.verbose,
   };
+}
+
+function parseHeaders(raw: string | string[] | undefined): Record<string, string> | undefined {
+  if (!raw) return undefined;
+  const values = Array.isArray(raw) ? raw : [raw];
+  const headers: Record<string, string> = {};
+  for (const entry of values) {
+    const idx = entry.indexOf(':');
+    if (idx === -1) {
+      process.stderr.write(`Warning: ignoring malformed header "${entry}" (expected "Key: Value")\n`);
+      continue;
+    }
+    headers[entry.slice(0, idx).trim()] = entry.slice(idx + 1).trim();
+  }
+  return Object.keys(headers).length > 0 ? headers : undefined;
 }

@@ -81,5 +81,6 @@ export interface ServerConfig {
   transport: 'stdio' | 'http';
   port: number;
   maxResponseSize: number;
+  customHeaders?: Record<string, string>;
   verbose?: boolean;
 }

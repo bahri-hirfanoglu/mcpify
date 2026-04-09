@@ -29,6 +29,7 @@ program
   .option('--max-response-size <kb>', 'max response size in KB')
   .option('--naming <style>', 'tool naming style (camelCase|snake_case|original)')
   .option('--prefix <prefix>', 'prefix to add to all tool names')
+  .option('--header <key:value...>', 'custom headers (repeatable, e.g. --header "Authorization: Bearer token")')
   .option('--verbose', 'verbose logging to stderr')
   .option('--dry-run', 'parse spec and list tools without starting server')
   .option('--watch', 'watch spec file for changes and reload tools')
@@ -89,6 +90,7 @@ program
         transport: config.transport!,
         port: config.port!,
         maxResponseSize: config.maxResponseSize! * 1024,
+        customHeaders: config.headers,
         verbose: config.verbose,
       };
 

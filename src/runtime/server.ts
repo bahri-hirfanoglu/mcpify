@@ -4,13 +4,14 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
+  isInitializeRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import type { ServerConfig } from '../types.js';
 import { executeRequest } from './http-client.js';
 
-export async function startServer(config: ServerConfig): Promise<Server> {
+function createMcpServer(config: ServerConfig): Server {
   const server = new Server(
     {
       name: `mcpify — ${config.spec.title}`,
@@ -53,16 +54,25 @@ export async function startServer(config: ServerConfig): Promise<Server> {
       config.auth,
       config.maxResponseSize,
       config.verbose,
+      config.customHeaders,
     );
 
     return result as typeof result & Record<string, unknown>;
   });
 
+  return server;
+}
+
+export async function startServer(config: ServerConfig): Promise<Server> {
+  let server: Server;
+
   if (config.transport === 'stdio') {
+    server = createMcpServer(config);
     const transport = new StdioServerTransport();
     await server.connect(transport);
-  } else if (config.transport === 'http') {
-    await startHttpTransport(server, config.port);
+  } else {
+    server = createMcpServer(config);
+    await startHttpTransport(() => createMcpServer(config), config.port);
   }
 
   process.stderr.write(
@@ -82,29 +92,92 @@ export async function startServer(config: ServerConfig): Promise<Server> {
 }
 
 async function startHttpTransport(
-  server: Server,
+  serverFactory: () => Server,
   port: number,
 ): Promise<void> {
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: () => randomUUID(),
-  });
-
-  await server.connect(transport);
+  const transports = new Map<string, StreamableHTTPServerTransport>();
 
   const httpServer = createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', `http://localhost:${port}`);
 
     if (url.pathname === '/mcp') {
-      // Parse JSON body for POST requests
-      if (req.method === 'POST') {
-        const chunks: Buffer[] = [];
-        for await (const chunk of req) {
-          chunks.push(chunk as Buffer);
+      try {
+        if (req.method === 'POST') {
+          const chunks: Buffer[] = [];
+          for await (const chunk of req) {
+            chunks.push(chunk as Buffer);
+          }
+          const body = JSON.parse(Buffer.concat(chunks).toString());
+
+          const sessionId = req.headers['mcp-session-id'] as string | undefined;
+
+          if (sessionId && transports.has(sessionId)) {
+            await transports.get(sessionId)!.handleRequest(req, res, body);
+          } else if (!sessionId && isInitializeRequest(body)) {
+            const transport = new StreamableHTTPServerTransport({
+              sessionIdGenerator: () => randomUUID(),
+              onsessioninitialized: (sid) => {
+                transports.set(sid, transport);
+              },
+            });
+
+            transport.onclose = () => {
+              const sid = transport.sessionId;
+              if (sid) transports.delete(sid);
+            };
+
+            const server = serverFactory();
+            await server.connect(transport);
+            await transport.handleRequest(req, res, body);
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
+              id: null,
+            }));
+          }
+        } else if (req.method === 'GET') {
+          const sessionId = req.headers['mcp-session-id'] as string | undefined;
+          if (sessionId && transports.has(sessionId)) {
+            await transports.get(sessionId)!.handleRequest(req, res);
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: 'Invalid or missing session ID' },
+              id: null,
+            }));
+          }
+        } else if (req.method === 'DELETE') {
+          const sessionId = req.headers['mcp-session-id'] as string | undefined;
+          if (sessionId && transports.has(sessionId)) {
+            const transport = transports.get(sessionId)!;
+            await transport.handleRequest(req, res);
+            await transport.close();
+            transports.delete(sessionId);
+          } else {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: 'Invalid or missing session ID' },
+              id: null,
+            }));
+          }
+        } else {
+          res.writeHead(405, { Allow: 'GET, POST, DELETE' });
+          res.end('Method Not Allowed');
         }
-        const body = JSON.parse(Buffer.concat(chunks).toString());
-        await transport.handleRequest(req, res, body);
-      } else {
-        await transport.handleRequest(req, res);
+      } catch (err) {
+        process.stderr.write(`MCP request error: ${err}\n`);
+        if (!res.headersSent) {
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            jsonrpc: '2.0',
+            error: { code: -32603, message: 'Internal server error' },
+            id: null,
+          }));
+        }
       }
     } else if (url.pathname === '/health') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
