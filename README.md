@@ -71,6 +71,7 @@ Options:
   --tags <tags>            Only include these tags (comma-separated)
   --naming <style>         Tool naming: camelCase | snake_case | original
   --prefix <prefix>        Prefix for all tool names
+  --header <key:value>     Custom headers (repeatable)
   --max-response-size <kb> Max response size in KB (default: 50)
   --dry-run                List tools without starting server
   --watch                  Watch spec file and reload on changes
@@ -114,7 +115,10 @@ mcpify ./api.yaml --transport http --port 3100
 This exposes:
 - `POST /mcp` — MCP JSON-RPC endpoint (Streamable HTTP)
 - `GET /mcp` — SSE stream for server-initiated messages
+- `DELETE /mcp` — End an MCP session
 - `GET /health` — Health check endpoint
+
+Each client gets an isolated session with its own MCP server instance. Sessions are tracked via the `mcp-session-id` header.
 
 ## Config File
 
@@ -129,6 +133,10 @@ Create a `.mcpifyrc.json` in your project root to avoid repeating CLI flags:
   "exclude": ["delete*"],
   "naming": "snake_case",
   "prefix": "myapi_",
+  "headers": {
+    "X-Custom-Header": "value",
+    "X-Api-Version": "2024-01"
+  },
   "verbose": true
 }
 ```
@@ -150,6 +158,20 @@ mcpify api.yaml --prefix myapi_
 mcpify api.yaml --naming snake_case --prefix myapi_
 # listAllPets → myapi_list_all_pets
 ```
+
+## Custom Headers
+
+Send custom HTTP headers with every API request:
+
+```bash
+# Single header
+mcpify api.yaml --header "Authorization: Bearer sk-..."
+
+# Multiple headers
+mcpify api.yaml --header "Authorization: Bearer sk-..." --header "X-Api-Version: 2024-01"
+```
+
+Also configurable via `.mcpifyrc.json` (`headers` field).
 
 ## Filtering Operations
 
@@ -175,6 +197,17 @@ Returns: array of {id, name, tag}
 ```
 
 This helps AI assistants understand what the API returns before calling a tool.
+
+## Key Sanitization
+
+mcpify automatically sanitizes JSON Schema property keys that contain special characters (dots, brackets, hyphens, etc.) to ensure compatibility with all MCP clients. Original keys are restored when making API requests, so the target API always receives the correct parameter names.
+
+```
+X-Request-ID  →  x_request_id  (in tool schema)
+filter[name]  →  filter_name_  (in tool schema)
+```
+
+This is fully transparent — no configuration needed.
 
 ## Verbose Logging
 
