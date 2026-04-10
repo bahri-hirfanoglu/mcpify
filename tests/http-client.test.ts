@@ -27,6 +27,23 @@ describe('executeRequest', () => {
     vi.restoreAllMocks();
   });
 
+  it('should preserve base URL path segments when joining', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValue(
+      new Response('{}', {
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+
+    const op = makeOp({ path: '/pets' });
+    await executeRequest(op, {}, 'https://api.example.com/v1', noAuth);
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://api.example.com/v1/pets',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
   it('should substitute path parameters', async () => {
     const mockFetch = vi.mocked(fetch);
     mockFetch.mockResolvedValue(

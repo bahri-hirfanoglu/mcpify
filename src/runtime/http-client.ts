@@ -90,7 +90,7 @@ function buildUrl(
     }
   }
 
-  const url = new URL(path, baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
+  const url = joinBaseUrl(baseUrl, path);
 
   for (const param of operation.parameters) {
     const argKey = sanitizeKey(param.name);
@@ -100,6 +100,14 @@ function buildUrl(
   }
 
   return url.toString();
+}
+
+export function joinBaseUrl(baseUrl: string, path: string): URL {
+  // new URL('/foo', 'https://host/v1/') drops /v1. Strip leading slash so the
+  // relative path joins below the base path instead of replacing it.
+  const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+  const relative = path.startsWith('/') ? path.slice(1) : path;
+  return new URL(relative, base);
 }
 
 async function buildHeaders(

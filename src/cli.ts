@@ -9,6 +9,7 @@ import { startServer } from './runtime/server.js';
 import { loadConfig, mergeConfig } from './config.js';
 import { runInit, createReadlinePrompter } from './commands/init.js';
 import { runValidate, formatReport } from './commands/validate.js';
+import { runInspect, formatInspectResult } from './commands/inspect.js';
 import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
@@ -111,6 +112,42 @@ program
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('inspect')
+  .description('Show full schema and example call for a single tool')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .argument('<tool>', 'Tool name to inspect')
+  .option('--base-url <url>', 'override base URL')
+  .option('--naming <style>', 'tool naming style (camelCase|snake_case|original)')
+  .option('--prefix <prefix>', 'prefix for tool names')
+  .option('--include <patterns>', 'comma-separated globs')
+  .option('--exclude <patterns>', 'comma-separated globs')
+  .option('--tags <tags>', 'comma-separated tag filter')
+  .action(async (
+    specArg: string,
+    toolArg: string,
+    opts: Record<string, string>,
+  ) => {
+    try {
+      const filter: FilterOptions = {};
+      if (opts.include) filter.include = opts.include.split(',').map((s) => s.trim());
+      if (opts.exclude) filter.exclude = opts.exclude.split(',').map((s) => s.trim());
+      if (opts.tags) filter.tags = opts.tags.split(',').map((s) => s.trim());
+      if (opts.naming) filter.naming = opts.naming as FilterOptions['naming'];
+      if (opts.prefix) filter.prefix = opts.prefix;
+
+      const result = await runInspect(specArg, toolArg, {
+        filter,
+        baseUrl: opts.baseUrl,
+      });
+      process.stderr.write(formatInspectResult(result));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
       process.exit(1);
     }
   });
