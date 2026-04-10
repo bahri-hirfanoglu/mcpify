@@ -7,6 +7,8 @@ import type {
   ParsedRequestBody,
   SecurityRequirement,
   SecurityScheme,
+  OAuthFlowDefinition,
+  OAuthFlowName,
 } from '../types.js';
 
 type OAParameter = OpenAPIV3.ParameterObject;
@@ -135,16 +137,55 @@ function extractSecuritySchemes3(
 
   for (const [name, scheme] of Object.entries(api.components.securitySchemes)) {
     const s = scheme as OASecurityScheme;
-    schemes[name] = {
+    const out: SecurityScheme = {
       type: s.type as SecurityScheme['type'],
-      scheme: (s as OpenAPIV3.HttpSecurityScheme).scheme,
-      bearerFormat: (s as OpenAPIV3.HttpSecurityScheme).bearerFormat,
-      name: (s as OpenAPIV3.ApiKeySecurityScheme).name,
-      in: (s as OpenAPIV3.ApiKeySecurityScheme).in as 'header' | 'query' | 'cookie' | undefined,
       description: s.description,
     };
+
+    if (s.type === 'http') {
+      const h = s as OpenAPIV3.HttpSecurityScheme;
+      out.scheme = h.scheme;
+      out.bearerFormat = h.bearerFormat;
+    } else if (s.type === 'apiKey') {
+      const a = s as OpenAPIV3.ApiKeySecurityScheme;
+      out.name = a.name;
+      out.in = a.in as 'header' | 'query' | 'cookie' | undefined;
+    } else if (s.type === 'oauth2') {
+      const o = s as OpenAPIV3.OAuth2SecurityScheme;
+      if (o.flows) out.flows = extractOAuthFlows(o.flows);
+    } else if (s.type === 'openIdConnect') {
+      const oidc = s as OpenAPIV3.OpenIdSecurityScheme;
+      out.openIdConnectUrl = oidc.openIdConnectUrl;
+    }
+
+    schemes[name] = out;
   }
   return schemes;
+}
+
+function extractOAuthFlows(
+  flows: OpenAPIV3.OAuth2SecurityScheme['flows'],
+): Partial<Record<OAuthFlowName, OAuthFlowDefinition>> {
+  const out: Partial<Record<OAuthFlowName, OAuthFlowDefinition>> = {};
+  const flowNames: OAuthFlowName[] = [
+    'implicit',
+    'password',
+    'clientCredentials',
+    'authorizationCode',
+  ];
+
+  for (const name of flowNames) {
+    const flow = flows?.[name];
+    if (!flow) continue;
+    out[name] = {
+      authorizationUrl: (flow as { authorizationUrl?: string }).authorizationUrl,
+      tokenUrl: (flow as { tokenUrl?: string }).tokenUrl,
+      refreshUrl: flow.refreshUrl,
+      scopes: flow.scopes ?? {},
+    };
+  }
+
+  return out;
 }
 
 // ── Swagger 2.0 ──

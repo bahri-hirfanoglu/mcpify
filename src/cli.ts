@@ -7,6 +7,10 @@ import { generateTools } from './generator/tools.js';
 import { resolveAuth } from './auth/handler.js';
 import { startServer } from './runtime/server.js';
 import { loadConfig, mergeConfig } from './config.js';
+import { runInit, createReadlinePrompter } from './commands/init.js';
+import { runValidate, formatReport } from './commands/validate.js';
+import { runInspect, formatInspectResult } from './commands/inspect.js';
+import { runInstall } from './commands/install.js';
 import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
@@ -14,7 +18,7 @@ const program = new Command();
 program
   .name('mcpify')
   .description('Generate an MCP server from an OpenAPI spec')
-  .version('1.0.0')
+  .version('1.2.0')
   .argument('[spec]', 'OpenAPI spec file path or URL')
   .option('--spec <source>', 'OpenAPI spec file path or URL (alternative to positional argument)')
   .option('--transport <type>', 'transport type (stdio|http)')
@@ -23,6 +27,12 @@ program
   .option('--bearer-token <token>', 'Bearer token for authentication')
   .option('--api-key-header <name>', 'API key header name')
   .option('--api-key-value <value>', 'API key value')
+  .option('--oauth-flow <flow>', 'OAuth2 flow (client_credentials | refresh_token)')
+  .option('--oauth-token-url <url>', 'OAuth2 token endpoint URL')
+  .option('--oauth-client-id <id>', 'OAuth2 client ID')
+  .option('--oauth-client-secret <secret>', 'OAuth2 client secret')
+  .option('--oauth-refresh-token <token>', 'OAuth2 refresh token')
+  .option('--oauth-scopes <scopes>', 'OAuth2 scopes (comma-separated)')
   .option('--include <patterns>', 'include operations matching glob patterns (comma-separated)')
   .option('--exclude <patterns>', 'exclude operations matching glob patterns (comma-separated)')
   .option('--tags <tags>', 'only include operations with these tags (comma-separated)')
@@ -75,6 +85,7 @@ program
           bearerToken: config.bearerToken,
           apiKeyHeader: config.apiKeyHeader,
           apiKeyValue: config.apiKeyValue,
+          oauth: config.oauth,
         },
         spec,
       );
@@ -103,6 +114,136 @@ program
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${message}\n`);
       process.exit(1);
+    }
+  });
+
+program
+  .command('install')
+  .description('Add an mcpify entry to claude_desktop_config.json')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .option('--name <name>', 'MCP server name (default: derived from spec)')
+  .option('--config <path>', 'override Claude Desktop config path')
+  .option('--force', 'overwrite existing entry')
+  .action(async function (this: Command, specArg: string) {
+    // optsWithGlobals() merges parent program's options (--bearer-token,
+    // --transport, --port, --base-url, etc.) with the subcommand's own
+    // options. Without this, Commander lets the parent shadow identically
+    // named subcommand options.
+    const opts = this.optsWithGlobals() as {
+      name?: string;
+      config?: string;
+      force?: boolean;
+      bearerToken?: string;
+      transport?: string;
+      port?: string;
+      baseUrl?: string;
+    };
+    try {
+      const extraArgs: string[] = [];
+      if (opts.transport) extraArgs.push('--transport', opts.transport);
+      if (opts.port) extraArgs.push('--port', opts.port);
+      if (opts.baseUrl) extraArgs.push('--base-url', opts.baseUrl);
+
+      const env: Record<string, string> = {};
+      if (opts.bearerToken) env.MCPIFY_BEARER_TOKEN = opts.bearerToken;
+
+      const result = await runInstall({
+        spec: specArg,
+        name: opts.name,
+        configPath: opts.config,
+        force: opts.force,
+        extraArgs,
+        env: Object.keys(env).length > 0 ? env : undefined,
+      });
+
+      process.stderr.write(
+        `\n✓ ${result.action === 'added' ? 'Added' : 'Updated'} "${result.serverName}" in ${result.configPath}\n`,
+      );
+      process.stderr.write(
+        `  command: ${result.entry.command}\n`,
+      );
+      process.stderr.write(
+        `  args: ${JSON.stringify(result.entry.args)}\n`,
+      );
+      if (result.entry.env) {
+        const envKeys = Object.keys(result.entry.env).join(', ');
+        process.stderr.write(`  env: [${envKeys}]\n`);
+      }
+      process.stderr.write('\nRestart Claude Desktop to load the new server.\n');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('inspect')
+  .description('Show full schema and example call for a single tool')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .argument('<tool>', 'Tool name to inspect')
+  .option('--base-url <url>', 'override base URL')
+  .option('--naming <style>', 'tool naming style (camelCase|snake_case|original)')
+  .option('--prefix <prefix>', 'prefix for tool names')
+  .option('--include <patterns>', 'comma-separated globs')
+  .option('--exclude <patterns>', 'comma-separated globs')
+  .option('--tags <tags>', 'comma-separated tag filter')
+  .action(async (
+    specArg: string,
+    toolArg: string,
+    opts: Record<string, string>,
+  ) => {
+    try {
+      const filter: FilterOptions = {};
+      if (opts.include) filter.include = opts.include.split(',').map((s) => s.trim());
+      if (opts.exclude) filter.exclude = opts.exclude.split(',').map((s) => s.trim());
+      if (opts.tags) filter.tags = opts.tags.split(',').map((s) => s.trim());
+      if (opts.naming) filter.naming = opts.naming as FilterOptions['naming'];
+      if (opts.prefix) filter.prefix = opts.prefix;
+
+      const result = await runInspect(specArg, toolArg, {
+        filter,
+        baseUrl: opts.baseUrl,
+      });
+      process.stderr.write(formatInspectResult(result));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('validate')
+  .description('Validate an OpenAPI spec for mcpify compatibility')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .action(async (specArg: string) => {
+    try {
+      const report = await runValidate(specArg);
+      process.stderr.write(formatReport(report));
+      process.exit(report.errorCount > 0 ? 1 : 0);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('init')
+  .description('Interactively create a .mcpifyrc.json config file')
+  .option('-f, --force', 'overwrite existing config without prompting')
+  .action(async (opts: { force?: boolean }) => {
+    const prompter = createReadlinePrompter();
+    try {
+      const result = await runInit(prompter, { force: opts.force });
+      process.stderr.write(`\n✓ Wrote ${result.path}\n`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
+    } finally {
+      prompter.close();
     }
   });
 
