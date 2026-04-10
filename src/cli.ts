@@ -7,6 +7,7 @@ import { generateTools } from './generator/tools.js';
 import { resolveAuth } from './auth/handler.js';
 import { startServer } from './runtime/server.js';
 import { loadConfig, mergeConfig } from './config.js';
+import { runInit, createReadlinePrompter } from './commands/init.js';
 import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
@@ -110,6 +111,24 @@ program
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${message}\n`);
       process.exit(1);
+    }
+  });
+
+program
+  .command('init')
+  .description('Interactively create a .mcpifyrc.json config file')
+  .option('-f, --force', 'overwrite existing config without prompting')
+  .action(async (opts: { force?: boolean }) => {
+    const prompter = createReadlinePrompter();
+    try {
+      const result = await runInit(prompter, { force: opts.force });
+      process.stderr.write(`\n✓ Wrote ${result.path}\n`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
+    } finally {
+      prompter.close();
     }
   });
 
