@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { executeRequest } from '../src/runtime/http-client.js';
 import type { ParsedOperation, AuthConfig } from '../src/types.js';
+import { TokenManager } from '../src/auth/oauth.js';
 
 function makeOp(overrides: Partial<ParsedOperation> = {}): ParsedOperation {
   return {
@@ -164,6 +165,39 @@ describe('executeRequest', () => {
 
     expect(result.content[0].text).toContain('...[truncated]');
     expect(result.content[0].text.length).toBeLessThan(600);
+  });
+
+  it('should apply oauth2 bearer token via TokenManager', async () => {
+    const mockFetch = vi.mocked(fetch);
+    mockFetch
+      // First call: token endpoint
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ access_token: 'oauth-at', expires_in: 3600 }),
+          { headers: { 'content-type': 'application/json' } },
+        ),
+      )
+      // Second call: actual API request
+      .mockResolvedValueOnce(
+        new Response('{}', {
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+
+    const tm = new TokenManager({
+      flow: 'client_credentials',
+      tokenUrl: 'https://auth.example.com/token',
+      clientId: 'cid',
+      clientSecret: 'secret',
+    });
+    const auth: AuthConfig = { type: 'oauth2', tokenManager: tm };
+
+    await executeRequest(makeOp(), {}, 'https://api.example.com', auth);
+
+    // The second fetch call is the actual API request
+    const apiCall = mockFetch.mock.calls[1];
+    const apiHeaders = (apiCall[1] as RequestInit).headers as Record<string, string>;
+    expect(apiHeaders['Authorization']).toBe('Bearer oauth-at');
   });
 
   it('should format JSON responses', async () => {

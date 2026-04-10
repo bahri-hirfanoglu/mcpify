@@ -1,6 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
+export interface OAuthConfig {
+  flow?: 'client_credentials' | 'refresh_token';
+  tokenUrl?: string;
+  clientId?: string;
+  clientSecret?: string;
+  refreshToken?: string;
+  scopes?: string[];
+}
+
 export interface McpifyConfig {
   spec?: string;
   transport?: 'stdio' | 'http';
@@ -9,6 +18,7 @@ export interface McpifyConfig {
   bearerToken?: string;
   apiKeyHeader?: string;
   apiKeyValue?: string;
+  oauth?: OAuthConfig;
   include?: string[];
   exclude?: string[];
   tags?: string[];
@@ -58,9 +68,29 @@ export function mergeConfig(
     maxResponseSize: cliOpts.maxResponseSize
       ? parseInt(cliOpts.maxResponseSize, 10)
       : fileConfig.maxResponseSize ?? 50,
+    oauth: mergeOAuth(fileConfig.oauth, cliOpts),
     headers: parseHeaders(cliOpts.header) ?? fileConfig.headers,
     verbose: cliOpts.verbose !== undefined ? true : fileConfig.verbose,
   };
+}
+
+function mergeOAuth(
+  fileOAuth: OAuthConfig | undefined,
+  cliOpts: Record<string, string | undefined>,
+): OAuthConfig | undefined {
+  const scopesRaw = cliOpts.oauthScopes;
+  const merged: OAuthConfig = {
+    flow: (cliOpts.oauthFlow as OAuthConfig['flow']) ?? fileOAuth?.flow,
+    tokenUrl: cliOpts.oauthTokenUrl ?? fileOAuth?.tokenUrl,
+    clientId: cliOpts.oauthClientId ?? fileOAuth?.clientId,
+    clientSecret: cliOpts.oauthClientSecret ?? fileOAuth?.clientSecret,
+    refreshToken: cliOpts.oauthRefreshToken ?? fileOAuth?.refreshToken,
+    scopes: scopesRaw ? scopesRaw.split(',').map((s) => s.trim()) : fileOAuth?.scopes,
+  };
+
+  // Strip undefined keys; return undefined if everything was empty
+  const hasAny = Object.values(merged).some((v) => v !== undefined);
+  return hasAny ? merged : undefined;
 }
 
 function parseHeaders(raw: string | string[] | undefined): Record<string, string> | undefined {

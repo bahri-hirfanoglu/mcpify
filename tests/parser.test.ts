@@ -63,4 +63,31 @@ describe('parseSpec', () => {
     const spec = await parseSpec(fixture('minimal.json'));
     expect(spec.defaultServerUrl).toBe('http://localhost');
   });
+
+  it('should extract oauth2 flows and openIdConnect URL', async () => {
+    const spec = await parseSpec(fixture('oauth.yaml'));
+
+    const oauth = spec.securitySchemes.oauth;
+    expect(oauth.type).toBe('oauth2');
+    expect(oauth.flows).toBeDefined();
+    expect(oauth.flows!.clientCredentials?.tokenUrl).toBe(
+      'https://auth.example.com/token',
+    );
+    expect(oauth.flows!.clientCredentials?.scopes).toEqual({
+      read: 'Read access',
+      write: 'Write access',
+    });
+    expect(oauth.flows!.authorizationCode?.authorizationUrl).toBe(
+      'https://auth.example.com/authorize',
+    );
+    expect(oauth.flows!.authorizationCode?.refreshUrl).toBe(
+      'https://auth.example.com/token',
+    );
+
+    const oidc = spec.securitySchemes.oidc;
+    expect(oidc.type).toBe('openIdConnect');
+    expect(oidc.openIdConnectUrl).toBe(
+      'https://auth.example.com/.well-known/openid-configuration',
+    );
+  });
 });

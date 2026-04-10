@@ -23,6 +23,12 @@ program
   .option('--bearer-token <token>', 'Bearer token for authentication')
   .option('--api-key-header <name>', 'API key header name')
   .option('--api-key-value <value>', 'API key value')
+  .option('--oauth-flow <flow>', 'OAuth2 flow (client_credentials | refresh_token)')
+  .option('--oauth-token-url <url>', 'OAuth2 token endpoint URL')
+  .option('--oauth-client-id <id>', 'OAuth2 client ID')
+  .option('--oauth-client-secret <secret>', 'OAuth2 client secret')
+  .option('--oauth-refresh-token <token>', 'OAuth2 refresh token')
+  .option('--oauth-scopes <scopes>', 'OAuth2 scopes (comma-separated)')
   .option('--include <patterns>', 'include operations matching glob patterns (comma-separated)')
   .option('--exclude <patterns>', 'exclude operations matching glob patterns (comma-separated)')
   .option('--tags <tags>', 'only include operations with these tags (comma-separated)')
@@ -75,6 +81,7 @@ program
           bearerToken: config.bearerToken,
           apiKeyHeader: config.apiKeyHeader,
           apiKeyValue: config.apiKeyValue,
+          oauth: config.oauth,
         },
         spec,
       );

@@ -18,7 +18,7 @@ export async function executeRequest(
 ): Promise<CallToolResult> {
   try {
     const url = buildUrl(operation, args, baseUrl);
-    const headers = buildHeaders(operation, args, auth, customHeaders);
+    const headers = await buildHeaders(operation, args, auth, customHeaders);
     const body = buildBody(args, operation);
 
     if (verbose) {
@@ -102,12 +102,12 @@ function buildUrl(
   return url.toString();
 }
 
-function buildHeaders(
+async function buildHeaders(
   operation: ParsedOperation,
   args: Record<string, unknown>,
   auth: AuthConfig,
   customHeaders?: Record<string, string>,
-): Record<string, string> {
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
@@ -136,7 +136,7 @@ function buildHeaders(
     }
   }
 
-  applyAuth(headers, auth);
+  await applyAuth(headers, auth);
 
   return headers;
 }

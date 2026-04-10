@@ -17,6 +17,19 @@ export interface SecurityRequirement {
   scopes: string[];
 }
 
+export interface OAuthFlowDefinition {
+  authorizationUrl?: string;
+  tokenUrl?: string;
+  refreshUrl?: string;
+  scopes: Record<string, string>;
+}
+
+export type OAuthFlowName =
+  | 'implicit'
+  | 'password'
+  | 'clientCredentials'
+  | 'authorizationCode';
+
 export interface SecurityScheme {
   type: 'http' | 'apiKey' | 'oauth2' | 'openIdConnect';
   scheme?: string;
@@ -24,6 +37,8 @@ export interface SecurityScheme {
   name?: string;
   in?: 'header' | 'query' | 'cookie';
   description?: string;
+  flows?: Partial<Record<OAuthFlowName, OAuthFlowDefinition>>;
+  openIdConnectUrl?: string;
 }
 
 export interface ParsedOperation {
@@ -52,6 +67,7 @@ export interface ParsedSpec {
 export type AuthConfig =
   | { type: 'bearer'; token: string }
   | { type: 'api-key'; headerName: string; value: string }
+  | { type: 'oauth2'; tokenManager: import('./auth/oauth.js').TokenManager }
   | { type: 'none' };
 
 export interface McpToolDefinition {

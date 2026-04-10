@@ -1,0 +1,36 @@
+openapi: '3.0.3'
+info:
+  title: OAuth API
+  version: '1.0.0'
+servers:
+  - url: https://api.example.com
+security:
+  - oauth: [read]
+paths:
+  /data:
+    get:
+      operationId: getData
+      summary: Get data
+      responses:
+        '200':
+          description: OK
+components:
+  securitySchemes:
+    oauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.example.com/token
+          scopes:
+            read: Read access
+            write: Write access
+        authorizationCode:
+          authorizationUrl: https://auth.example.com/authorize
+          tokenUrl: https://auth.example.com/token
+          refreshUrl: https://auth.example.com/token
+          scopes:
+            read: Read access
+            write: Write access
+    oidc:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.example.com/.well-known/openid-configuration
