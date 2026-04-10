@@ -10,6 +10,7 @@ import { loadConfig, mergeConfig } from './config.js';
 import { runInit, createReadlinePrompter } from './commands/init.js';
 import { runValidate, formatReport } from './commands/validate.js';
 import { runInspect, formatInspectResult } from './commands/inspect.js';
+import { runInstall } from './commands/install.js';
 import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
@@ -112,6 +113,66 @@ program
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('install')
+  .description('Add an mcpify entry to claude_desktop_config.json')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .option('--name <name>', 'MCP server name (default: derived from spec)')
+  .option('--config <path>', 'override Claude Desktop config path')
+  .option('--force', 'overwrite existing entry')
+  .action(async function (this: Command, specArg: string) {
+    // optsWithGlobals() merges parent program's options (--bearer-token,
+    // --transport, --port, --base-url, etc.) with the subcommand's own
+    // options. Without this, Commander lets the parent shadow identically
+    // named subcommand options.
+    const opts = this.optsWithGlobals() as {
+      name?: string;
+      config?: string;
+      force?: boolean;
+      bearerToken?: string;
+      transport?: string;
+      port?: string;
+      baseUrl?: string;
+    };
+    try {
+      const extraArgs: string[] = [];
+      if (opts.transport) extraArgs.push('--transport', opts.transport);
+      if (opts.port) extraArgs.push('--port', opts.port);
+      if (opts.baseUrl) extraArgs.push('--base-url', opts.baseUrl);
+
+      const env: Record<string, string> = {};
+      if (opts.bearerToken) env.MCPIFY_BEARER_TOKEN = opts.bearerToken;
+
+      const result = await runInstall({
+        spec: specArg,
+        name: opts.name,
+        configPath: opts.config,
+        force: opts.force,
+        extraArgs,
+        env: Object.keys(env).length > 0 ? env : undefined,
+      });
+
+      process.stderr.write(
+        `\n✓ ${result.action === 'added' ? 'Added' : 'Updated'} "${result.serverName}" in ${result.configPath}\n`,
+      );
+      process.stderr.write(
+        `  command: ${result.entry.command}\n`,
+      );
+      process.stderr.write(
+        `  args: ${JSON.stringify(result.entry.args)}\n`,
+      );
+      if (result.entry.env) {
+        const envKeys = Object.keys(result.entry.env).join(', ');
+        process.stderr.write(`  env: [${envKeys}]\n`);
+      }
+      process.stderr.write('\nRestart Claude Desktop to load the new server.\n');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
       process.exit(1);
     }
   });
