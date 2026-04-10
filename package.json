@@ -45,7 +45,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",

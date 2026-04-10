@@ -70,11 +70,15 @@ describe('CI workflow', () => {
     expect(content).toContain('pull_request:');
   });
 
-  it('tests across multiple node versions', async () => {
+  it('tests across supported node versions (20+)', async () => {
     const content = await readRepoFile('.github/workflows/ci.yml');
     expect(content).toContain('matrix:');
     expect(content).toContain('npm test');
     expect(content).toContain('npm ci');
+    expect(content).toContain("'20'");
+    expect(content).toContain("'22'");
+    // Node 18 is EOL and vitest@4 requires Node 20+ (node:util.styleText)
+    expect(content).not.toContain("'18'");
   });
 
   it('builds the Docker image', async () => {

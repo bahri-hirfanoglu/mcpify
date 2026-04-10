@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - `applyAuth` is now async to accommodate OAuth2 token fetching. Direct
   callers must `await` the result.
+- Minimum Node.js version bumped to **20**. Node 18 reached end-of-life
+  in April 2025 and the test toolchain (vitest 4) now requires APIs
+  introduced in Node 20 (`node:util.styleText`).
 
 ## [1.1.1] - 2026-04-09
 
