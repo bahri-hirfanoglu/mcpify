@@ -18,7 +18,7 @@ const program = new Command();
 program
   .name('mcpify')
   .description('Generate an MCP server from an OpenAPI spec')
-  .version('1.0.0')
+  .version('1.2.0')
   .argument('[spec]', 'OpenAPI spec file path or URL')
   .option('--spec <source>', 'OpenAPI spec file path or URL (alternative to positional argument)')
   .option('--transport <type>', 'transport type (stdio|http)')
