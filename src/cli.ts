@@ -8,6 +8,7 @@ import { resolveAuth } from './auth/handler.js';
 import { startServer } from './runtime/server.js';
 import { loadConfig, mergeConfig } from './config.js';
 import { runInit, createReadlinePrompter } from './commands/init.js';
+import { runValidate, formatReport } from './commands/validate.js';
 import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
@@ -110,6 +111,22 @@ program
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`Error: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('validate')
+  .description('Validate an OpenAPI spec for mcpify compatibility')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .action(async (specArg: string) => {
+    try {
+      const report = await runValidate(specArg);
+      process.stderr.write(formatReport(report));
+      process.exit(report.errorCount > 0 ? 1 : 0);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
       process.exit(1);
     }
   });
