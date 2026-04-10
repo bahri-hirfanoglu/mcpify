@@ -1,0 +1,75 @@
+name: mcpify
+description: Generate an MCP server from an OpenAPI spec or validate specs for MCP compatibility
+author: Bahri Hirfanoglu
+branding:
+  icon: server
+  color: purple
+
+inputs:
+  spec:
+    description: OpenAPI spec file path or URL
+    required: true
+  command:
+    description: Command to run (validate | dry-run | inspect | serve)
+    required: false
+    default: validate
+  tool:
+    description: Tool name to inspect (only for command=inspect)
+    required: false
+  version:
+    description: mcpify version to install (default latest)
+    required: false
+    default: latest
+  transport:
+    description: Transport type for serve command (stdio | http)
+    required: false
+    default: http
+  port:
+    description: HTTP port for serve command
+    required: false
+    default: '3100'
+  bearer-token:
+    description: Bearer token (injected into MCPIFY_BEARER_TOKEN)
+    required: false
+  extra-args:
+    description: Extra CLI flags appended to the command
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Install mcpify
+      shell: bash
+      run: npm install -g "@bahridev/mcpify@${{ inputs.version }}"
+
+    - name: Run mcpify
+      shell: bash
+      env:
+        MCPIFY_BEARER_TOKEN: ${{ inputs.bearer-token }}
+      run: |
+        set -euo pipefail
+        case "${{ inputs.command }}" in
+          validate)
+            mcpify validate "${{ inputs.spec }}" ${{ inputs.extra-args }}
+            ;;
+          dry-run)
+            mcpify "${{ inputs.spec }}" --dry-run ${{ inputs.extra-args }}
+            ;;
+          inspect)
+            if [ -z "${{ inputs.tool }}" ]; then
+              echo "::error::command=inspect requires the 'tool' input"
+              exit 1
+            fi
+            mcpify inspect "${{ inputs.spec }}" "${{ inputs.tool }}" ${{ inputs.extra-args }}
+            ;;
+          serve)
+            mcpify "${{ inputs.spec }}" \
+              --transport "${{ inputs.transport }}" \
+              --port "${{ inputs.port }}" \
+              ${{ inputs.extra-args }}
+            ;;
+          *)
+            echo "::error::Unknown command: ${{ inputs.command }}"
+            exit 1
+            ;;
+        esac

@@ -76,7 +76,7 @@ export async function startServer(config: ServerConfig): Promise<Server> {
   }
 
   process.stderr.write(
-    `mcpify v1.0.0 — serving ${config.tools.length} tools from "${config.spec.title}"` +
+    `mcpify v1.2.0 — serving ${config.tools.length} tools from "${config.spec.title}"` +
     (config.transport === 'http' ? ` on http://localhost:${config.port}/mcp` : '') +
     '\n',
   );

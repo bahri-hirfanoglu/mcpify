@@ -18,7 +18,7 @@ export async function executeRequest(
 ): Promise<CallToolResult> {
   try {
     const url = buildUrl(operation, args, baseUrl);
-    const headers = buildHeaders(operation, args, auth, customHeaders);
+    const headers = await buildHeaders(operation, args, auth, customHeaders);
     const body = buildBody(args, operation);
 
     if (verbose) {
@@ -90,7 +90,7 @@ function buildUrl(
     }
   }
 
-  const url = new URL(path, baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
+  const url = joinBaseUrl(baseUrl, path);
 
   for (const param of operation.parameters) {
     const argKey = sanitizeKey(param.name);
@@ -102,12 +102,20 @@ function buildUrl(
   return url.toString();
 }
 
-function buildHeaders(
+export function joinBaseUrl(baseUrl: string, path: string): URL {
+  // new URL('/foo', 'https://host/v1/') drops /v1. Strip leading slash so the
+  // relative path joins below the base path instead of replacing it.
+  const base = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+  const relative = path.startsWith('/') ? path.slice(1) : path;
+  return new URL(relative, base);
+}
+
+async function buildHeaders(
   operation: ParsedOperation,
   args: Record<string, unknown>,
   auth: AuthConfig,
   customHeaders?: Record<string, string>,
-): Record<string, string> {
+): Promise<Record<string, string>> {
   const headers: Record<string, string> = {
     Accept: 'application/json',
   };
@@ -136,7 +144,7 @@ function buildHeaders(
     }
   }
 
-  applyAuth(headers, auth);
+  await applyAuth(headers, auth);
 
   return headers;
 }

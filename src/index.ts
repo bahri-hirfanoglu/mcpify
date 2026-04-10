@@ -3,6 +3,7 @@ export { generateTools } from './generator/tools.js';
 export { startServer } from './runtime/server.js';
 export { executeRequest } from './runtime/http-client.js';
 export { applyAuth, resolveAuth } from './auth/handler.js';
+export { TokenManager } from './auth/oauth.js';
 
 export type {
   ParsedSpec,
@@ -11,6 +12,8 @@ export type {
   ParsedRequestBody,
   SecurityRequirement,
   SecurityScheme,
+  OAuthFlowDefinition,
+  OAuthFlowName,
   AuthConfig,
   McpToolDefinition,
   FilterOptions,
@@ -18,3 +21,4 @@ export type {
 } from './types.js';
 
 export type { AuthOptions } from './auth/handler.js';
+export type { OAuthOptions, OAuthFlowType } from './auth/oauth.js';

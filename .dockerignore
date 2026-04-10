@@ -1,0 +1,16 @@
+node_modules
+dist
+coverage
+tests
+.git
+.github
+*.log
+.DS_Store
+.mcpifyrc.json
+.mcpifyrc
+mcpify.config.json
+.vscode
+.idea
+README.md
+LICENSE
+docs
