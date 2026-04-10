@@ -13,10 +13,24 @@ jobs:
   npm-publish:
     name: Publish to npm
     runs-on: ubuntu-latest
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
+      - name: Skip if NPM_TOKEN not configured
+        id: check
+        run: |
+          if [ -z "${NPM_TOKEN}" ]; then
+            echo "::notice::NPM_TOKEN secret not configured — skipping automatic npm publish. Publish manually with 'npm publish --access public'."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.check.outputs.skip != 'true'
 
       - name: Setup Node
+        if: steps.check.outputs.skip != 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -24,15 +38,19 @@ jobs:
           cache: npm
 
       - name: Install dependencies
+        if: steps.check.outputs.skip != 'true'
         run: npm ci
 
       - name: Test
+        if: steps.check.outputs.skip != 'true'
         run: npm test
 
       - name: Build
+        if: steps.check.outputs.skip != 'true'
         run: npm run build
 
       - name: Publish
+        if: steps.check.outputs.skip != 'true'
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
