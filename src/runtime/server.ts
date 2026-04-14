@@ -10,8 +10,13 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import type { ServerConfig } from '../types.js';
 import { executeRequest } from './http-client.js';
+import { ResponseCache } from './cache.js';
 
 function createMcpServer(config: ServerConfig): Server {
+  const cache = config.cache && config.cache.ttlMs > 0
+    ? new ResponseCache({ ttlMs: config.cache.ttlMs, maxEntries: config.cache.maxEntries })
+    : undefined;
+
   const server = new Server(
     {
       name: `mcpify — ${config.spec.title}`,
@@ -52,9 +57,15 @@ function createMcpServer(config: ServerConfig): Server {
       args,
       config.baseUrl,
       config.auth,
-      config.maxResponseSize,
-      config.verbose,
-      config.customHeaders,
+      {
+        maxResponseSize: config.maxResponseSize,
+        verbose: config.verbose,
+        customHeaders: config.customHeaders,
+        retry: config.retry,
+        cache,
+        pagination: config.pagination,
+        responseFields: config.responseFields,
+      },
     );
 
     return result as typeof result & Record<string, unknown>;
@@ -76,7 +87,7 @@ export async function startServer(config: ServerConfig): Promise<Server> {
   }
 
   process.stderr.write(
-    `mcpify v1.2.0 — serving ${config.tools.length} tools from "${config.spec.title}"` +
+    `mcpify v1.3.0 — serving ${config.tools.length} tools from "${config.spec.title}"` +
     (config.transport === 'http' ? ` on http://localhost:${config.port}/mcp` : '') +
     '\n',
   );

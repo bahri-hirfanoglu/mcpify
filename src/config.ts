@@ -27,6 +27,14 @@ export interface McpifyConfig {
   prefix?: string;
   headers?: Record<string, string>;
   verbose?: boolean;
+  retry?: number;
+  retryDelay?: number;
+  retryMaxDelay?: number;
+  cacheTtl?: number;
+  cacheMax?: number;
+  autoPaginate?: boolean;
+  maxPages?: number;
+  responseFields?: string[];
 }
 
 const CONFIG_FILES = ['.mcpifyrc.json', '.mcpifyrc', 'mcpify.config.json'];
@@ -71,6 +79,16 @@ export function mergeConfig(
     oauth: mergeOAuth(fileConfig.oauth, cliOpts),
     headers: parseHeaders(cliOpts.header) ?? fileConfig.headers,
     verbose: cliOpts.verbose !== undefined ? true : fileConfig.verbose,
+    retry: cliOpts.retry !== undefined ? parseInt(cliOpts.retry, 10) : fileConfig.retry,
+    retryDelay: cliOpts.retryDelay !== undefined ? parseInt(cliOpts.retryDelay, 10) : fileConfig.retryDelay,
+    retryMaxDelay: cliOpts.retryMaxDelay !== undefined ? parseInt(cliOpts.retryMaxDelay, 10) : fileConfig.retryMaxDelay,
+    cacheTtl: cliOpts.cacheTtl !== undefined ? parseInt(cliOpts.cacheTtl, 10) : fileConfig.cacheTtl,
+    cacheMax: cliOpts.cacheMax !== undefined ? parseInt(cliOpts.cacheMax, 10) : fileConfig.cacheMax,
+    autoPaginate: cliOpts.autoPaginate !== undefined ? true : fileConfig.autoPaginate,
+    maxPages: cliOpts.maxPages !== undefined ? parseInt(cliOpts.maxPages, 10) : fileConfig.maxPages,
+    responseFields: cliOpts.responseFields
+      ? cliOpts.responseFields.split(',').map((s) => s.trim()).filter(Boolean)
+      : fileConfig.responseFields,
   };
 }
 
