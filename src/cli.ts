@@ -11,6 +11,8 @@ import { runInit, createReadlinePrompter } from './commands/init.js';
 import { runValidate, formatReport } from './commands/validate.js';
 import { runInspect, formatInspectResult } from './commands/inspect.js';
 import { runInstall } from './commands/install.js';
+import { runDiff, formatDiff, hasBreakingChanges } from './commands/diff.js';
+import { runTest, formatTestReport } from './commands/test.js';
 import type { FilterOptions, McpToolDefinition, ParsedSpec, ServerConfig } from './types.js';
 
 const program = new Command();
@@ -18,7 +20,7 @@ const program = new Command();
 program
   .name('mcpify')
   .description('Generate an MCP server from an OpenAPI spec')
-  .version('1.2.0')
+  .version('1.3.0')
   .argument('[spec]', 'OpenAPI spec file path or URL')
   .option('--spec <source>', 'OpenAPI spec file path or URL (alternative to positional argument)')
   .option('--transport <type>', 'transport type (stdio|http)')
@@ -40,6 +42,14 @@ program
   .option('--naming <style>', 'tool naming style (camelCase|snake_case|original)')
   .option('--prefix <prefix>', 'prefix to add to all tool names')
   .option('--header <key:value...>', 'custom headers (repeatable, e.g. --header "Authorization: Bearer token")')
+  .option('--retry <count>', 'retry attempts on 429/5xx (default: 0)')
+  .option('--retry-delay <ms>', 'base delay for retry backoff (default: 500)')
+  .option('--retry-max-delay <ms>', 'max delay for retry backoff (default: 10000)')
+  .option('--cache-ttl <seconds>', 'cache TTL for GET responses (default: 0, disabled)')
+  .option('--cache-max <count>', 'max cached entries (default: 100)')
+  .option('--auto-paginate', 'follow pagination links and merge pages')
+  .option('--max-pages <count>', 'max pages to follow when paginating (default: 10)')
+  .option('--response-fields <paths>', 'comma-separated dotted paths to select (e.g. "data[].id,data[].name")')
   .option('--verbose', 'verbose logging to stderr')
   .option('--dry-run', 'parse spec and list tools without starting server')
   .option('--watch', 'watch spec file for changes and reload tools')
@@ -103,6 +113,20 @@ program
         maxResponseSize: config.maxResponseSize! * 1024,
         customHeaders: config.headers,
         verbose: config.verbose,
+        retry: config.retry && config.retry > 0 ? {
+          retries: config.retry,
+          baseDelayMs: config.retryDelay ?? 500,
+          maxDelayMs: config.retryMaxDelay ?? 10_000,
+        } : undefined,
+        cache: config.cacheTtl && config.cacheTtl > 0 ? {
+          ttlMs: config.cacheTtl * 1000,
+          maxEntries: config.cacheMax ?? 100,
+        } : undefined,
+        pagination: config.autoPaginate ? {
+          enabled: true,
+          maxPages: config.maxPages ?? 10,
+        } : undefined,
+        responseFields: config.responseFields,
       };
 
       await startServer(serverConfig);
@@ -244,6 +268,77 @@ program
       process.exit(1);
     } finally {
       prompter.close();
+    }
+  });
+
+program
+  .command('diff')
+  .description('Compare two OpenAPI specs and report changes')
+  .argument('<left>', 'baseline spec (path or URL)')
+  .argument('<right>', 'updated spec (path or URL)')
+  .option('--fail-on-breaking', 'exit 1 if breaking changes detected')
+  .action(async (leftArg: string, rightArg: string, opts: { failOnBreaking?: boolean }) => {
+    try {
+      const result = await runDiff(leftArg, rightArg);
+      process.stderr.write(formatDiff(result));
+      if (opts.failOnBreaking && hasBreakingChanges(result)) {
+        process.stderr.write('\nBreaking changes detected.\n');
+        process.exit(1);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('test')
+  .description('Smoke-test safe GET/HEAD operations against a live API')
+  .argument('<spec>', 'OpenAPI spec file path or URL')
+  .option('--base-url <url>', 'override base URL')
+  .option('--bearer-token <token>', 'bearer token')
+  .option('--api-key-header <name>', 'API key header name')
+  .option('--api-key-value <value>', 'API key value')
+  .option('--timeout <ms>', 'per-request timeout (default: 10000)')
+  .option('--only <ids>', 'comma-separated operation IDs to test')
+  .option('--header <key:value...>', 'custom headers (repeatable)')
+  .action(async function (this: Command, specArg: string, opts: {
+    baseUrl?: string;
+    bearerToken?: string;
+    apiKeyHeader?: string;
+    apiKeyValue?: string;
+    timeout?: string;
+    only?: string;
+    header?: string[];
+  }) {
+    try {
+      const customHeaders: Record<string, string> = {};
+      if (opts.header) {
+        for (const entry of opts.header) {
+          const idx = entry.indexOf(':');
+          if (idx === -1) continue;
+          customHeaders[entry.slice(0, idx).trim()] = entry.slice(idx + 1).trim();
+        }
+      }
+
+      const report = await runTest(specArg, {
+        baseUrl: opts.baseUrl,
+        auth: {
+          bearerToken: opts.bearerToken,
+          apiKeyHeader: opts.apiKeyHeader,
+          apiKeyValue: opts.apiKeyValue,
+        },
+        filterIds: opts.only ? opts.only.split(',').map((s) => s.trim()) : undefined,
+        timeoutMs: opts.timeout ? parseInt(opts.timeout, 10) : undefined,
+        customHeaders: Object.keys(customHeaders).length > 0 ? customHeaders : undefined,
+      });
+      process.stderr.write(formatTestReport(report));
+      process.exit(report.fail > 0 ? 1 : 0);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`\nError: ${message}\n`);
+      process.exit(1);
     }
   });
 

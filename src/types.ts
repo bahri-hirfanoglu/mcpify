@@ -88,6 +88,22 @@ export interface FilterOptions {
   prefix?: string;
 }
 
+export interface RetryConfig {
+  retries: number;
+  baseDelayMs: number;
+  maxDelayMs: number;
+}
+
+export interface CacheConfig {
+  ttlMs: number;
+  maxEntries: number;
+}
+
+export interface PaginationConfig {
+  enabled: boolean;
+  maxPages: number;
+}
+
 export interface ServerConfig {
   spec: ParsedSpec;
   tools: McpToolDefinition[];
@@ -99,4 +115,8 @@ export interface ServerConfig {
   maxResponseSize: number;
   customHeaders?: Record<string, string>;
   verbose?: boolean;
+  retry?: RetryConfig;
+  cache?: CacheConfig;
+  pagination?: PaginationConfig;
+  responseFields?: string[];
 }

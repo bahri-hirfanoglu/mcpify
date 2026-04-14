@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-04-14
+
+### Added
+- **Retry with exponential backoff** — retries on 429 and 5xx responses
+  with exponential backoff and jitter, honoring the `Retry-After`
+  header (numeric seconds or HTTP date). New CLI flags: `--retry`,
+  `--retry-delay`, `--retry-max-delay`.
+- **Response caching** — in-memory LRU cache with TTL for GET
+  responses. Cache key includes method, URL, and Authorization header
+  so different auth contexts don't collide. POST and error responses
+  are never cached. New CLI flags: `--cache-ttl`, `--cache-max`.
+- **Pagination auto-follow** — when `--auto-paginate` is set, mcpify
+  follows RFC 5988 `Link: rel=next`, body `next` / `links.next.href`
+  fields, and common cursor fields (`nextCursor`, `next_cursor`,
+  `nextToken`). Pages are merged by concatenating arrays or merging
+  the primary array key (`data`, `items`, `results`, …). Capped at
+  `--max-pages` (default 10).
+- **Response field selection** — `--response-fields` accepts
+  comma-separated dotted paths with array traversal syntax
+  (`items[].id,items[].name`). Reduces token usage when the LLM only
+  needs specific fields from a large response.
+- **`mcpify diff <left> <right>`** — compares two OpenAPI specs and
+  reports added/removed/changed operations with parameter-level
+  detail. `--fail-on-breaking` exits 1 when removed operations,
+  newly-required parameters, or method/path changes are detected.
+- **`mcpify test <spec>`** — smoke-tests safe GET/HEAD operations
+  against a live API. Skips operations with required parameters or
+  non-safe methods. Reports per-operation status with HTTP code and
+  duration. Exits 1 when any probe fails. Supports `--bearer-token`,
+  `--api-key-header/value`, `--header`, `--only`, `--timeout`.
+
+### Exports
+- `ResponseCache`, `cacheKey`
+- `shouldRetry`, `parseRetryAfter`, `computeBackoff`, `withRetry`,
+  `DEFAULT_RETRY`
+- `parseLinkHeader`, `findNextUrlFromBody`, `findNextCursorFromBody`,
+  `mergePages`
+- `selectFields`, `parseFieldList`
+- `runDiff`, `diffSpecs`, `formatDiff`, `hasBreakingChanges`
+- `runTest`, `formatTestReport`
+- New config types: `RetryConfig`, `CacheConfig`, `PaginationConfig`
+
 ## [1.2.0] - 2026-04-10
 
 ### Added

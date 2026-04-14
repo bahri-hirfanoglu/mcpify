@@ -60,6 +60,16 @@ mcpify inspect ./api.yaml listPets
 
 # Add to Claude Desktop config automatically
 mcpify install ./api.yaml --name my-api --bearer-token $API_TOKEN
+
+# Retry on 429/5xx, cache GETs, auto-paginate, pluck fields
+mcpify ./api.yaml --retry 3 --cache-ttl 60 --auto-paginate \
+  --response-fields "data[].id,data[].name"
+
+# Compare two specs for breaking changes
+mcpify diff ./old.yaml ./new.yaml --fail-on-breaking
+
+# Smoke-test safe operations against a live API
+mcpify test ./api.yaml --bearer-token $TOKEN
 ```
 
 ## Usage
@@ -91,6 +101,14 @@ Options:
   --prefix <prefix>            Prefix for all tool names
   --header <key:value>         Custom headers (repeatable)
   --max-response-size <kb>     Max response size in KB (default: 50)
+  --retry <count>              Retry attempts on 429/5xx (default: 0)
+  --retry-delay <ms>           Base delay for retry backoff (default: 500)
+  --retry-max-delay <ms>       Max delay for retry backoff (default: 10000)
+  --cache-ttl <seconds>        Cache TTL for GET responses (default: 0)
+  --cache-max <count>          Max cached entries (default: 100)
+  --auto-paginate              Follow pagination links and merge pages
+  --max-pages <count>          Max pages when paginating (default: 10)
+  --response-fields <paths>    Dotted paths to select (e.g. "data[].id")
   --dry-run                    List tools without starting server
   --watch                      Watch spec file and reload on changes
   --verbose                    Verbose HTTP logging to stderr
@@ -102,7 +120,78 @@ Commands:
   validate <spec>              Report MCP compatibility of a spec
   inspect <spec> <tool>        Show full schema and example call for a tool
   install <spec>               Add entry to claude_desktop_config.json
+  diff <left> <right>          Compare two specs, report changes
+  test <spec>                  Smoke-test safe operations against a live API
 ```
+
+## Retry, Cache, Pagination, Field Selection
+
+For resilient and token-efficient runtime behavior:
+
+```bash
+# Retry on 429/5xx with exponential backoff, honoring Retry-After
+mcpify ./api.yaml --retry 3 --retry-delay 500 --retry-max-delay 10000
+
+# Cache GET responses for 60 seconds (per-auth keyed)
+mcpify ./api.yaml --cache-ttl 60 --cache-max 200
+
+# Follow Link/next/cursor pagination and merge pages into one response
+mcpify ./api.yaml --auto-paginate --max-pages 20
+
+# Pluck only the fields the LLM needs from large responses
+mcpify ./api.yaml --response-fields "data[].id,data[].name"
+```
+
+All four can be combined and are also configurable via `.mcpifyrc.json`
+(`retry`, `retryDelay`, `retryMaxDelay`, `cacheTtl`, `cacheMax`,
+`autoPaginate`, `maxPages`, `responseFields`).
+
+## `mcpify diff`
+
+Compare two spec versions and report added, removed, and changed
+operations:
+
+```bash
+$ mcpify diff ./v1.yaml ./v2.yaml
+
+Minimal API v0.1.0  →  Minimal API v0.2.0
+
+Added:     1
+Removed:   1
+Changed:   1
+Unchanged: 1
+
+Added operations:
+  + getStatus  GET /status
+
+Removed operations:
+  - legacy  GET /legacy
+
+Changed operations:
+  ~ getItem  GET /items/{id}
+      + param query:verbose
+```
+
+Use `--fail-on-breaking` in CI to guard against removed operations,
+newly-required parameters, or method/path changes.
+
+## `mcpify test`
+
+Smoke-test safe `GET` / `HEAD` operations against a live API:
+
+```bash
+$ mcpify test ./api.yaml --bearer-token $TOKEN
+
+Base URL: https://api.example.com
+Operations: 5  (ok: 3, fail: 0, skipped: 2)
+
+  ✓ healthCheck  GET /health 200 45ms
+  ✓ listPets     GET /pets   200 112ms
+  ∘ getPet       GET /pets/{petId} (requires parameters)
+```
+
+Exits 1 when any probe fails. Operations requiring path/query/header
+parameters or using unsafe methods are skipped automatically.
 
 ## Supported Specs
 
