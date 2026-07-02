@@ -59,6 +59,29 @@ describe('parseSpec', () => {
     expect(listPets.security[0].name).toBe('bearerAuth');
   });
 
+  it('should parse Xquik OpenAPI 3.1 header auth fixture', async () => {
+    const spec = await parseSpec(fixture('xquik-openapi31.yaml'));
+
+    expect(spec.title).toBe('Xquik API');
+    expect(spec.version).toBe('1.0');
+    expect(spec.defaultServerUrl).toBe('https://xquik.com');
+    expect(spec.securitySchemes.apiKey).toEqual({
+      type: 'apiKey',
+      name: 'x-api-key',
+      in: 'header',
+    });
+
+    const searchTweets = spec.operations.find(
+      (o) => o.operationId === 'searchTweets',
+    )!;
+    expect(searchTweets.method).toBe('GET');
+    expect(searchTweets.path).toBe('/api/v1/x/tweets/search');
+    expect(searchTweets.tags).toEqual(['x']);
+    expect(searchTweets.parameters.map((p) => p.name)).toEqual(['q', 'limit']);
+    expect(searchTweets.responseSchema).toHaveProperty('properties');
+    expect(searchTweets.security[0]).toEqual({ name: 'apiKey', scopes: [] });
+  });
+
   it('should use localhost when no servers defined', async () => {
     const spec = await parseSpec(fixture('minimal.json'));
     expect(spec.defaultServerUrl).toBe('http://localhost');
